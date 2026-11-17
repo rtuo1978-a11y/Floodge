@@ -222,7 +222,9 @@ const styles = StyleSheet.create({
   },
   actions: { flexDirection: 'row', gap: espace.s },
   action: {
-    flex: 1,
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
     height: 52,
     borderRadius: rayon.m,
     alignItems: 'center',
@@ -233,6 +235,6 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
   },
-  sos: { backgroundColor: couleurs.sos, flex: 0, width: 80 },
+  sos: { backgroundColor: couleurs.sos, flexGrow: 0, flexShrink: 0, flexBasis: 84 },
   texteAction: { color: '#fff', fontWeight: '700', fontSize: police.moyenne },
 });

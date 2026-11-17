@@ -49,7 +49,7 @@ export default function ProfilEcran() {
         </Text>
         <View style={[styles.ligne, { marginTop: espace.m }]}>
           <Text style={{ fontSize: police.grande, fontWeight: '800', color: couleurs.primaire }}>{utilisateur.points}</Text>
-          <Text style={styles.texte}>points citoyens{monRang ? ` · ${monRang}ᵉ ce mois-ci` : ''}</Text>
+          <Text style={styles.texte}>points citoyens{monRang ? ` · ${monRang === 1 ? '1er' : `${monRang}e`} ce mois-ci` : ''}</Text>
         </View>
       </Carte>
 
