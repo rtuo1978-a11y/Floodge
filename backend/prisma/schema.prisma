@@ -1,4 +1,4 @@
-// Schéma de la base Floodge (Supabase / PostgreSQL)
+// Schéma de la base FlowManage (Supabase / PostgreSQL)
 // Après modification : npx prisma migrate dev --name <description>
 
 generator client {

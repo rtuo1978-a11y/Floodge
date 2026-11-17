@@ -1,7 +1,7 @@
 import { centre, distanceMetres, type Point } from '../common/geo.js';
 
 /**
- * Moteur de règles — niveau 1 de "l'intelligence" de Floodge.
+ * Moteur de règles — niveau 1 de "l'intelligence" de FlowManage.
  * Fonctions pures, testées dans regles.spec.ts. Les seuils se règlent ici.
  */
 export const SEUILS = {

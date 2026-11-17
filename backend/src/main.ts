@@ -15,7 +15,7 @@ async function bootstrap() {
   app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads/' });
 
   const swagger = new DocumentBuilder()
-    .setTitle('Floodge API')
+    .setTitle('FlowManage API')
     .setDescription("API de prévention et de gestion des inondations en Côte d'Ivoire")
     .setVersion('0.1.0')
     .addBearerAuth()
@@ -26,6 +26,6 @@ async function bootstrap() {
   const port = process.env.PORT ?? 3000;
   // 0.0.0.0 : accessible depuis le téléphone sur le même réseau Wi-Fi
   await app.listen(port, '0.0.0.0');
-  console.log(`Floodge API : http://localhost:${port}/api/v1 — documentation : http://localhost:${port}/docs`);
+  console.log(`FlowManage API : http://localhost:${port}/api/v1 — documentation : http://localhost:${port}/docs`);
 }
 await bootstrap();

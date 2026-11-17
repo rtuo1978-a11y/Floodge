@@ -1,6 +1,6 @@
-# Floodge — Back-end
+# FlowManage — Back-end
 
-API principale de Floodge : comptes, signalements, alertes, secours, conseils, badges, zones à risque.
+API principale de FlowManage : comptes, signalements, alertes, secours, conseils, badges, zones à risque.
 **NestJS 12 · Prisma 7 · Supabase (PostgreSQL + Storage) · notifications push Expo**
 
 ## Installation
@@ -35,14 +35,14 @@ npm run start:dev
 - Documentation interactive (Swagger) : http://localhost:3000/docs
 - Pour tester depuis le téléphone, utiliser l'IP de l'ordinateur sur le Wi-Fi (ex. `http://192.168.1.20:3000/api/v1`).
 
-Comptes de démonstration (mot de passe `Floodge2026!`) :
+Comptes de démonstration (mot de passe `FlowManage2026!`) :
 
 | E-mail | Rôle |
 |---|---|
-| admin@floodge.ci | ADMIN |
-| autorite@floodge.ci | AUTORITE (publie les alertes) |
-| secours@floodge.ci | SECOURISTE |
-| citoyen1@floodge.ci … citoyen3@floodge.ci | CITOYEN |
+| admin@flowmanage.ci | ADMIN |
+| autorite@flowmanage.ci | AUTORITE (publie les alertes) |
+| secours@flowmanage.ci | SECOURISTE |
+| citoyen1@flowmanage.ci … citoyen3@flowmanage.ci | CITOYEN |
 
 ## Tests
 

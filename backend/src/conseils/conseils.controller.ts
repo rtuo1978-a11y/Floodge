@@ -50,7 +50,7 @@ export class ConseilsController {
     return { conseils: base.map((c) => `${c.titre} : ${c.contenu}`), source: 'reference' };
   }
 
-  /** Assistant conversationnel Floodge. */
+  /** Assistant conversationnel FlowManage. */
   @ApiBearerAuth()
   @Post('ia/chat')
   async chat(@Body() dto: ChatDto) {

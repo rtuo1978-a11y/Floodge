@@ -1,7 +1,7 @@
 {
-  "name": "floodge-backend",
+  "name": "flowmanage-backend",
   "version": "0.0.1",
-  "description": "API Floodge — prévention et gestion des inondations (NestJS + Prisma + Supabase)",
+  "description": "API FlowManage — prévention et gestion des inondations (NestJS + Prisma + Supabase)",
   "author": "",
   "private": true,
   "license": "UNLICENSED",

@@ -26,7 +26,7 @@ class SanteController {
   @Public()
   @Get('sante')
   sante() {
-    return { statut: 'ok', service: 'floodge-backend', heure: new Date().toISOString() };
+    return { statut: 'ok', service: 'flowmanage-backend', heure: new Date().toISOString() };
   }
 }
 

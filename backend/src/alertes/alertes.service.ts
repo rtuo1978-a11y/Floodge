@@ -108,7 +108,7 @@ export class AlertesService {
         niveau: alerte.niveau,
         commune: alerte.commune,
       });
-      texteVocal = ia?.texte ?? `Alerte Floodge. ${alerte.titre}. ${alerte.message}`.slice(0, 300);
+      texteVocal = ia?.texte ?? `Alerte FlowManage. ${alerte.titre}. ${alerte.message}`.slice(0, 300);
     }
 
     const publiee = await this.prisma.alerte.update({
