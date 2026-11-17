@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { HttpException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Point } from '../common/geo.js';
 
@@ -29,12 +29,15 @@ export class CarteClient {
     );
   }
 
-  /** Itinéraire qui évite les points inondés (Google Directions + filtrage). */
+  /**
+   * Itinéraire qui évite les points inondés (Google Routes + filtrage).
+   * Les erreurs du service (ex. clé Google absente) sont renvoyées telles quelles au mobile.
+   */
   itineraireSur(body: { origine: Point; destination: Point; pointsInondes: Point[]; mode?: string }) {
-    return this.requete<unknown>('/itineraires/sur', body, 20_000);
+    return this.requete<unknown>('/itineraires/sur', body, 20_000, true);
   }
 
-  private async requete<T>(chemin: string, body?: unknown, timeoutMs = 8_000): Promise<T | null> {
+  private async requete<T>(chemin: string, body?: unknown, timeoutMs = 8_000, propager = false): Promise<T | null> {
     if (!this.baseUrl) return null;
     try {
       const res = await fetch(`${this.baseUrl}${chemin}`, {
@@ -43,9 +46,14 @@ export class CarteClient {
         body: body ? JSON.stringify(body) : undefined,
         signal: AbortSignal.timeout(timeoutMs),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        const detail = (await res.json().catch(() => ({}))) as { message?: string };
+        if (propager) throw new HttpException(detail.message ?? 'Erreur du service cartographie', res.status);
+        throw new Error(`HTTP ${res.status}`);
+      }
       return (await res.json()) as T;
     } catch (e) {
+      if (e instanceof HttpException) throw e;
       this.logger.warn(`Service cartographie indisponible (${chemin}) : ${(e as Error).message}`);
       return null;
     }
