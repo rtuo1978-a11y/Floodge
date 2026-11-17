@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
-import { Logo } from '../components/Logo';
+import { Logo, NomMarque } from '../components/Logo';
 import { Bandeau, Bouton, Champ, Texte } from '../components/ui';
 import { useAuth } from '../lib/auth';
 import { couleurs, espace, ombre, rayon } from '../theme';
@@ -35,10 +35,12 @@ export default function Connexion() {
         {/* En-tête de marque */}
         <View style={styles.hero}>
           <SafeAreaView edges={['top']} style={{ alignItems: 'center' }}>
-            <Logo taille={72} inverse />
-            <Texte variante="affiche" couleur={couleurs.surFonce} style={{ marginTop: espace.m }}>
-              Floodge
-            </Texte>
+            <View style={styles.cadreLogo}>
+              <Logo taille={76} />
+            </View>
+            <View style={{ marginTop: espace.m }}>
+              <NomMarque taille={34} inverse />
+            </View>
             <Texte variante="corps" couleur={couleurs.primaireDoux} style={{ marginTop: espace.xs }}>
               Anticiper, alerter, protéger.
             </Texte>
@@ -83,7 +85,7 @@ export default function Connexion() {
           <View style={styles.separateur}>
             <View style={styles.trait} />
             <Texte variante="petit" couleur={couleurs.texteSecondaire}>
-              Nouveau sur Floodge ?
+              Nouveau sur FlowManage ?
             </Texte>
             <View style={styles.trait} />
           </View>
@@ -97,6 +99,7 @@ export default function Connexion() {
 const styles = StyleSheet.create({
   hero: { backgroundColor: couleurs.primaire, paddingTop: espace.xl, paddingBottom: espace.xxl + espace.l, alignItems: 'center' },
   vague: { position: 'absolute', bottom: -1, left: 0, right: 0 },
+  cadreLogo: { borderRadius: 22, borderWidth: 3, borderColor: couleurs.contourClair, padding: 2 },
   formulaire: {
     marginHorizontal: espace.m,
     marginTop: -espace.xl,

@@ -2,12 +2,16 @@ import { Ambulance, Hourglass, Phone, ShieldCheck, Siren } from 'lucide-react-na
 import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Linking, Pressable, StyleSheet, View } from 'react-native';
 import { Bandeau, Bouton, Carte, Champ, Ecran, EnTeteSection, Texte } from '../components/ui';
+import { haptique } from '../lib/haptique';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { ilYa } from '../lib/format';
 import { positionActuelle } from '../lib/position';
 import type { DemandeSecours } from '../lib/types';
 import { couleurs, espace, ombre, rayon, taille } from '../theme';
+
+/** Durée d'appui nécessaire : évite les déclenchements par erreur (poche, enfant…). */
+const DUREE_MAINTIEN_MS = 1500;
 
 const NUMEROS = [
   { libelle: 'Sapeurs-pompiers', numero: '180' },
@@ -20,7 +24,9 @@ function Halo() {
   const echelle = useRef(new Animated.Value(1)).current;
   const [reduit, setReduit] = useState(true);
   useEffect(() => {
-    AccessibilityInfo.isReduceMotionEnabled().then(setReduit).catch(() => setReduit(false));
+    AccessibilityInfo.isReduceMotionEnabled()
+      .then(setReduit)
+      .catch(() => setReduit(false));
   }, []);
   useEffect(() => {
     if (reduit) return;
@@ -45,7 +51,29 @@ export default function SosEcran() {
   const [erreur, setErreur] = useState<string | null>(null);
   const [demandes, setDemandes] = useState<DemandeSecours[]>([]);
 
-  const charger = () => api.mesDemandesSecours().then(setDemandes).catch(() => null);
+  const progres = useRef(new Animated.Value(0)).current;
+  const charger = () =>
+    api
+      .mesDemandesSecours()
+      .then(setDemandes)
+      .catch(() => null);
+
+  function commencerMaintien() {
+    if (envoi) return;
+    haptique.appui();
+    Animated.timing(progres, { toValue: 1, duration: DUREE_MAINTIEN_MS, useNativeDriver: true }).start(({ finished }) => {
+      if (finished) {
+        haptique.fort();
+        void envoyer();
+      }
+    });
+  }
+
+  function arreterMaintien() {
+    progres.stopAnimation((v) => {
+      if (v < 1) Animated.timing(progres, { toValue: 0, duration: 200, useNativeDriver: true }).start();
+    });
+  }
   useEffect(() => {
     void charger();
   }, []);
@@ -62,11 +90,14 @@ export default function SosEcran() {
         description: description.trim() || undefined,
         telephone: telephone.trim() || undefined,
       });
+      haptique.succes();
       await charger();
     } catch (e) {
+      haptique.erreur();
       setErreur((e as Error).message);
     } finally {
       setEnvoi(false);
+      progres.setValue(0);
     }
   }
 
@@ -113,26 +144,37 @@ export default function SosEcran() {
       ) : (
         <>
           <Texte variante="corps" couleur={couleurs.texteSecondaire} style={{ textAlign: 'center', marginBottom: espace.m }}>
-            Votre position sera envoyée aux équipes de secours. À utiliser uniquement si des personnes sont en danger.
+            Maintenez le bouton appuyé : votre position sera envoyée aux équipes de secours. À utiliser uniquement si des personnes sont en
+            danger.
           </Texte>
 
           <View style={styles.zoneBouton}>
             <Halo />
             <Pressable
-              onPress={envoyer}
+              onPressIn={commencerMaintien}
+              onPressOut={arreterMaintien}
               disabled={envoi}
               accessibilityRole="button"
-              accessibilityLabel="Envoyer une demande de secours avec ma position"
+              accessibilityLabel="SOS : envoyer une demande de secours avec ma position"
+              accessibilityHint="Maintenir appuyé pour envoyer. Avec un lecteur d'écran, toucher deux fois."
               accessibilityState={{ busy: envoi }}
-              style={({ pressed }) => [styles.boutonSos, { backgroundColor: pressed || envoi ? couleurs.sosPresse : couleurs.sos }, ombre.forte]}
+              accessibilityActions={[{ name: 'activate' }]}
+              onAccessibilityAction={(e) => {
+                if (e.nativeEvent.actionName === 'activate') void envoyer();
+              }}
+              style={[styles.boutonSos, { backgroundColor: couleurs.sos }, ombre.forte]}
             >
-              <Siren size={40} color={couleurs.surFonce} strokeWidth={2.2} />
-              <Texte variante="affiche" couleur={couleurs.surFonce}>
-                {envoi ? '…' : 'SOS'}
-              </Texte>
-              <Texte variante="legende" couleur={couleurs.surFonce} style={{ textAlign: 'center' }}>
-                TOUCHER POUR ENVOYER
-              </Texte>
+              {/* Remplissage progressif pendant le maintien */}
+              <Animated.View pointerEvents="none" style={[styles.remplissage, { transform: [{ scale: progres }] }]} />
+              <View style={styles.contenuSos}>
+                <Siren size={40} color={couleurs.surFonce} strokeWidth={2.2} />
+                <Texte variante="affiche" couleur={couleurs.surFonce}>
+                  {envoi ? '…' : 'SOS'}
+                </Texte>
+                <Texte variante="legende" couleur={couleurs.surFonce} style={{ textAlign: 'center' }}>
+                  {envoi ? 'ENVOI EN COURS' : 'MAINTENIR APPUYÉ'}
+                </Texte>
+              </View>
             </Pressable>
           </View>
 
@@ -141,7 +183,12 @@ export default function SosEcran() {
               Aidez les secours (facultatif)
             </Texte>
             <Champ libelle="Nombre de personnes" value={nbPersonnes} onChangeText={setNbPersonnes} keyboardType="number-pad" />
-            <Champ libelle="Situation" value={description} onChangeText={setDescription} placeholder="Ex. : bloqués au 1er étage, une personne âgée" />
+            <Champ
+              libelle="Situation"
+              value={description}
+              onChangeText={setDescription}
+              placeholder="Ex. : bloqués au 1er étage, une personne âgée"
+            />
             <Champ libelle="Téléphone pour vous joindre" value={telephone} onChangeText={setTelephone} keyboardType="phone-pad" />
           </Carte>
         </>
@@ -187,6 +234,15 @@ const styles = StyleSheet.create({
     borderWidth: 6,
     borderColor: couleurs.surface,
     paddingHorizontal: espace.m,
+    overflow: 'hidden',
+  },
+  contenuSos: { alignItems: 'center', zIndex: 1 },
+  remplissage: {
+    position: 'absolute',
+    width: taille.sos,
+    height: taille.sos,
+    borderRadius: taille.sos / 2,
+    backgroundColor: couleurs.sosPresse,
   },
   suivi: { backgroundColor: couleurs.sos, borderRadius: rayon.xl, padding: espace.l, alignItems: 'center', gap: espace.s },
   iconeSuivi: {

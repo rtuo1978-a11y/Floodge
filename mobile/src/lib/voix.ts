@@ -10,5 +10,5 @@ export async function lire(texte: string) {
 export const arreterLecture = () => Speech.stop();
 
 export function texteAlerte(a: Pick<Alerte, 'texteVocal' | 'titre' | 'message'>) {
-  return a.texteVocal ?? `Alerte Floodge. ${a.titre}. ${a.message}`;
+  return a.texteVocal ?? `Alerte FlowManage. ${a.titre}. ${a.message}`;
 }

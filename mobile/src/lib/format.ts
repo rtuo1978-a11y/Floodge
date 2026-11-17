@@ -24,9 +24,27 @@ export interface StyleNiveau {
 }
 
 export const NIVEAUX_INONDATION: Record<NiveauInondation, StyleNiveau & { aide: string }> = {
-  FAIBLE: { libelle: 'Faible', aide: 'Eau peu profonde, on peut encore passer', couleur: couleurs.faible, doux: couleurs.faibleDoux, icone: Droplet },
-  MODERE: { libelle: 'Modéré', aide: 'Circulation perturbée, eau aux genoux', couleur: couleurs.modere, doux: couleurs.modereDoux, icone: Car },
-  ELEVE: { libelle: 'Élevé', aide: 'Danger : maisons envahies, personnes menacées', couleur: couleurs.eleve, doux: couleurs.eleveDoux, icone: WavesHorizontal },
+  FAIBLE: {
+    libelle: 'Faible',
+    aide: 'Eau peu profonde, on peut encore passer',
+    couleur: couleurs.faible,
+    doux: couleurs.faibleDoux,
+    icone: Droplet,
+  },
+  MODERE: {
+    libelle: 'Modéré',
+    aide: 'Circulation perturbée, eau aux genoux',
+    couleur: couleurs.modere,
+    doux: couleurs.modereDoux,
+    icone: Car,
+  },
+  ELEVE: {
+    libelle: 'Élevé',
+    aide: 'Danger : maisons envahies, personnes menacées',
+    couleur: couleurs.eleve,
+    doux: couleurs.eleveDoux,
+    icone: WavesHorizontal,
+  },
 };
 
 export const NIVEAUX_RISQUE: Record<NiveauRisque, StyleNiveau> = {

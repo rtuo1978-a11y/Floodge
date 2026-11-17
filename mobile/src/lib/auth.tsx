@@ -3,7 +3,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { api, definirJeton } from './api';
 import type { Session, Utilisateur } from './types';
 
-const CLE_JETON = 'floodge.jeton';
+const CLE_JETON = 'flowmanage.jeton';
+const CLE_BIENVENUE = 'flowmanage.bienvenue';
 
 interface ContexteAuth {
   utilisateur: Utilisateur | null;
@@ -12,6 +13,9 @@ interface ContexteAuth {
   inscrire: (d: Parameters<typeof api.inscription>[0]) => Promise<void>;
   deconnecter: () => Promise<void>;
   rafraichir: () => Promise<void>;
+  /** L'écran de bienvenue (3 pages) a déjà été vu sur ce téléphone */
+  bienvenueVue: boolean;
+  terminerBienvenue: () => Promise<void>;
 }
 
 const Contexte = createContext<ContexteAuth | null>(null);
@@ -19,11 +23,13 @@ const Contexte = createContext<ContexteAuth | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [utilisateur, setUtilisateur] = useState<Utilisateur | null>(null);
   const [chargement, setChargement] = useState(true);
+  const [bienvenueVue, setBienvenueVue] = useState(false);
 
   // Au démarrage : reprendre la session enregistrée
   useEffect(() => {
     (async () => {
       try {
+        setBienvenueVue((await SecureStore.getItemAsync(CLE_BIENVENUE).catch(() => null)) === 'oui');
         const jeton = await SecureStore.getItemAsync(CLE_JETON);
         if (jeton) {
           definirJeton(jeton);
@@ -56,8 +62,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUtilisateur(null);
       },
       rafraichir: async () => setUtilisateur(await api.moi()),
+      bienvenueVue,
+      terminerBienvenue: async () => {
+        await SecureStore.setItemAsync(CLE_BIENVENUE, 'oui').catch(() => null);
+        setBienvenueVue(true);
+      },
     }),
-    [utilisateur, chargement, ouvrir],
+    [utilisateur, chargement, ouvrir, bienvenueVue],
   );
 
   return <Contexte.Provider value={valeur}>{children}</Contexte.Provider>;

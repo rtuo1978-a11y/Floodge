@@ -63,8 +63,7 @@ const qs = (params: Record<string, string | number | undefined | null>) => {
 
 export const api = {
   // Auth et profil
-  connexion: (email: string, motDePasse: string) =>
-    requete<Session>('/auth/connexion', { body: { email, motDePasse } }),
+  connexion: (email: string, motDePasse: string) => requete<Session>('/auth/connexion', { body: { email, motDePasse } }),
   inscription: (d: { nom: string; email: string; motDePasse: string; telephone?: string; commune?: string }) =>
     requete<Session>('/auth/inscription', { body: d }),
   moi: () => requete<Utilisateur>('/utilisateurs/moi'),
@@ -94,20 +93,17 @@ export const api = {
   archiverAlerte: (id: string) => requete<Alerte>(`/alertes/${id}/archiver`, { method: 'PATCH' }),
 
   // Secours
-  sos: (d: Point & { nbPersonnes?: number; description?: string; telephone?: string }) =>
-    requete<DemandeSecours>('/secours', { body: d }),
+  sos: (d: Point & { nbPersonnes?: number; description?: string; telephone?: string }) => requete<DemandeSecours>('/secours', { body: d }),
   mesDemandesSecours: () => requete<DemandeSecours[]>('/secours/miennes'),
   demandesSecours: () => requete<DemandeSecours[]>('/secours'),
-  majSecours: (id: string, statut: StatutSecours) =>
-    requete<DemandeSecours>(`/secours/${id}`, { method: 'PATCH', body: { statut } }),
+  majSecours: (id: string, statut: StatutSecours) => requete<DemandeSecours>(`/secours/${id}`, { method: 'PATCH', body: { statut } }),
 
   // Carte
   zones: () => requete<{ type: 'FeatureCollection'; features: ZoneFeature[] }>('/zones'),
   itineraireSur: (origine: Point, destination: Point, mode: 'driving' | 'walking' = 'driving') =>
-    requete<{ itineraires: Itineraire[]; recommande: Itineraire | null; avertissement: string | null }>(
-      '/carte/itineraire-sur',
-      { body: { origine, destination, mode } },
-    ),
+    requete<{ itineraires: Itineraire[]; recommande: Itineraire | null; avertissement: string | null }>('/carte/itineraire-sur', {
+      body: { origine, destination, mode },
+    }),
 
   // Conseils et IA
   conseils: (moment?: MomentConseil) => requete<Conseil[]>(`/conseils${qs({ moment })}`),

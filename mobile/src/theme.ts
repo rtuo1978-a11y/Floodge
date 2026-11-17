@@ -1,5 +1,5 @@
 /**
- * Design system Floodge — jetons (tokens).
+ * Design system FlowManage — jetons (tokens).
  * Documentation : design/design-system.md
  *
  * Règle : aucun écran n'utilise de couleur, taille ou espacement « en dur ».
@@ -50,6 +50,7 @@ export const couleurs = {
   // voiles blancs posés sur un fond bleu ou rouge (statistiques, icônes)
   voileClair: 'rgba(255, 255, 255, 0.12)',
   voileClairFort: 'rgba(255, 255, 255, 0.18)',
+  contourClair: 'rgba(255, 255, 255, 0.35)',
 
   // récompenses (badges, podium)
   or: '#A16207',

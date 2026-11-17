@@ -1,10 +1,11 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { LocateFixed, RefreshCw, Route, Siren, TriangleExclamationPoint, X } from 'lucide-react-native';
+import { Check, LocateFixed, MapPin, RefreshCw, Route, Siren, TriangleExclamationPoint, X } from 'lucide-react-native';
 import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import MapView, { Marker, Polygon, Polyline, PROVIDER_GOOGLE, type LatLng } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Logo } from '../../components/Logo';
+import { Logo, NomMarque } from '../../components/Logo';
+import { haptique } from '../../lib/haptique';
 import { Bouton, BoutonIcone, PastilleNiveau, Texte } from '../../components/ui';
 import { api } from '../../lib/api';
 import { distance, duree, ilYa, NIVEAUX_ALERTE, NIVEAUX_INONDATION, NIVEAUX_RISQUE } from '../../lib/format';
@@ -37,6 +38,19 @@ export default function CarteEcran() {
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState<string | null>(null);
   const [selection, setSelection] = useState<Selection>(null);
+  // Filtres de la carte : niveaux de risque affichés + couche des signalements
+  const [niveauxVisibles, setNiveauxVisibles] = useState<Set<NiveauRisque>>(new Set(LEGENDE));
+  const [voirSignalements, setVoirSignalements] = useState(true);
+
+  function basculerNiveau(n: NiveauRisque) {
+    haptique.selection();
+    setNiveauxVisibles((avant) => {
+      const apres = new Set(avant);
+      if (apres.has(n)) apres.delete(n);
+      else apres.add(n);
+      return apres;
+    });
+  }
 
   const [destination, setDestination] = useState<Point | null>(null);
   const [itineraires, setItineraires] = useState<Itineraire[]>([]);
@@ -74,7 +88,11 @@ export default function CarteEcran() {
     if (!destination) return;
     const depart = position ?? (await positionActuelle());
     if (!depart) {
-      setSelection({ type: 'itineraire', texte: 'Activez la localisation pour calculer un itinéraire.', sur: false });
+      setSelection({
+        type: 'itineraire',
+        texte: 'Activez la localisation pour calculer un itinéraire.',
+        sur: false,
+      });
       return;
     }
     setCalcul(true);
@@ -93,10 +111,17 @@ export default function CarteEcran() {
       });
       const tous = r.itineraires.flatMap((i) => decoderPolyline(i.polyline));
       if (tous.length) {
-        carte.current?.fitToCoordinates(tous, { edgePadding: { top: 160, bottom: 280, left: 40, right: 40 }, animated: true });
+        carte.current?.fitToCoordinates(tous, {
+          edgePadding: { top: 160, bottom: 280, left: 40, right: 40 },
+          animated: true,
+        });
       }
     } catch (e) {
-      setSelection({ type: 'itineraire', texte: (e as Error).message, sur: false });
+      setSelection({
+        type: 'itineraire',
+        texte: (e as Error).message,
+        sur: false,
+      });
     } finally {
       setCalcul(false);
     }
@@ -116,7 +141,11 @@ export default function CarteEcran() {
         ref={carte}
         style={StyleSheet.absoluteFill}
         provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
-        initialRegion={{ ...ABIDJAN, latitudeDelta: 0.18, longitudeDelta: 0.18 }}
+        initialRegion={{
+          ...ABIDJAN,
+          latitudeDelta: 0.18,
+          longitudeDelta: 0.18,
+        }}
         showsUserLocation
         showsMyLocationButton={false}
         toolbarEnabled={false}
@@ -127,21 +156,26 @@ export default function CarteEcran() {
           setSelection({ type: 'destination' });
         }}
       >
-        {zones.map((z) =>
-          contours(z).map((coords, i) => (
-            <Polygon
-              key={`${z.properties.code}-${i}`}
-              coordinates={coords}
-              fillColor={`${NIVEAUX_RISQUE[z.properties.niveau].couleur}33`}
-              strokeColor={NIVEAUX_RISQUE[z.properties.niveau].couleur}
-              strokeWidth={2}
-              tappable
-              onPress={() => setSelection({ type: 'zone', zone: z })}
-            />
-          )),
-        )}
+        {zones
+          .filter((z) => niveauxVisibles.has(z.properties.niveau))
+          .map((z) =>
+            contours(z).map((coords, i) => (
+              <Polygon
+                key={`${z.properties.code}-${i}`}
+                coordinates={coords}
+                fillColor={`${NIVEAUX_RISQUE[z.properties.niveau].couleur}33`}
+                strokeColor={NIVEAUX_RISQUE[z.properties.niveau].couleur}
+                strokeWidth={2}
+                tappable
+                onPress={() => {
+                  haptique.selection();
+                  setSelection({ type: 'zone', zone: z });
+                }}
+              />
+            )),
+          )}
 
-        {signalements.map((s) => {
+        {(voirSignalements ? signalements : []).map((s) => {
           const n = NIVEAUX_INONDATION[s.niveau];
           return (
             <Marker
@@ -177,7 +211,7 @@ export default function CarteEcran() {
         <View style={[styles.barre, ombre.moyenne]}>
           <Logo taille={36} />
           <View style={{ flex: 1 }}>
-            <Texte variante="titre3">Floodge</Texte>
+            <NomMarque taille={19} />
             <Texte variante="petit" couleur={couleurs.texteSecondaire} numberOfLines={1}>
               {chargement ? 'Mise à jour…' : `${signalements.length} signalement(s) · ${zones.length} zones suivies`}
             </Texte>
@@ -196,7 +230,10 @@ export default function CarteEcran() {
             accessibilityLabel={`Alerte ${NIVEAUX_ALERTE[alerteUrgente.niveau].libelle} : ${alerteUrgente.titre}. Voir les alertes`}
             style={({ pressed }) => [
               styles.alerte,
-              { backgroundColor: NIVEAUX_ALERTE[alerteUrgente.niveau].couleur, opacity: pressed ? 0.9 : 1 },
+              {
+                backgroundColor: NIVEAUX_ALERTE[alerteUrgente.niveau].couleur,
+                opacity: pressed ? 0.9 : 1,
+              },
               ombre.moyenne,
             ]}
           >
@@ -230,16 +267,50 @@ export default function CarteEcran() {
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.legende}
-          accessibilityLabel="Légende des niveaux de risque"
+          accessibilityLabel="Filtres de la carte"
         >
-          {LEGENDE.map((n) => (
-            <View key={n} style={[styles.puce, ombre.faible]}>
-              <View style={[styles.pointLegende, { backgroundColor: NIVEAUX_RISQUE[n].couleur }]} />
-              <Texte variante="legende" couleur={couleurs.texte}>
-                {NIVEAUX_RISQUE[n].libelle.replace('Risque ', '')}
-              </Texte>
-            </View>
-          ))}
+          <Pressable
+            onPress={() => {
+              haptique.selection();
+              setVoirSignalements((v) => !v);
+            }}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: voirSignalements }}
+            accessibilityLabel="Afficher les signalements"
+            style={[styles.puce, voirSignalements ? styles.puceActive : null, ombre.faible]}
+          >
+            <MapPin size={14} color={voirSignalements ? couleurs.surPrimaire : couleurs.texteSecondaire} />
+            <Texte variante="legende" couleur={voirSignalements ? couleurs.surPrimaire : couleurs.texteSecondaire}>
+              SIGNALEMENTS
+            </Texte>
+          </Pressable>
+          {LEGENDE.map((n) => {
+            const actif = niveauxVisibles.has(n);
+            return (
+              <Pressable
+                key={n}
+                onPress={() => basculerNiveau(n)}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: actif }}
+                accessibilityLabel={`Zones ${NIVEAUX_RISQUE[n].libelle}`}
+                style={[styles.puce, ombre.faible, !actif ? { backgroundColor: couleurs.surfaceAlt } : null]}
+              >
+                <View
+                  style={[
+                    styles.pointLegende,
+                    {
+                      backgroundColor: actif ? NIVEAUX_RISQUE[n].couleur : couleurs.bordureForte,
+                    },
+                  ]}
+                >
+                  {actif ? <Check size={8} color={couleurs.surFonce} strokeWidth={4} /> : null}
+                </View>
+                <Texte variante="legende" couleur={actif ? couleurs.texte : couleurs.texteDesactive}>
+                  {NIVEAUX_RISQUE[n].libelle.replace('Risque ', '').toUpperCase()}
+                </Texte>
+              </Pressable>
+            );
+          })}
         </ScrollView>
       </SafeAreaView>
 
@@ -248,7 +319,10 @@ export default function CarteEcran() {
         <View style={styles.flottants} pointerEvents="box-none">
           <BoutonIcone icone={LocateFixed} libelle="Centrer sur ma position" onPress={recentrer} />
           <Pressable
-            onPress={() => router.push('/sos')}
+            onPress={() => {
+              haptique.appui();
+              router.push('/sos');
+            }}
             accessibilityRole="button"
             accessibilityLabel="SOS : demander du secours"
             style={({ pressed }) => [styles.sos, { backgroundColor: pressed ? couleurs.sosPresse : couleurs.sos }, ombre.forte]}
@@ -370,7 +444,14 @@ function Panneau({
 }
 
 const styles = StyleSheet.create({
-  haut: { position: 'absolute', top: 0, left: 0, right: 0, paddingHorizontal: espace.m, gap: espace.s },
+  haut: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: espace.m,
+    gap: espace.s,
+  },
   barre: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -399,9 +480,16 @@ const styles = StyleSheet.create({
     backgroundColor: couleurs.surface,
     borderRadius: rayon.rond,
     paddingHorizontal: espace.sm,
-    paddingVertical: espace.xs + 2,
+    minHeight: 36,
   },
-  pointLegende: { width: 10, height: 10, borderRadius: 5 },
+  pointLegende: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  puceActive: { backgroundColor: couleurs.primaire },
   marqueur: {
     width: 32,
     height: 32,
@@ -437,7 +525,14 @@ const styles = StyleSheet.create({
     paddingBottom: espace.m,
     gap: espace.s,
   },
-  poignee: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: couleurs.bordureForte, marginBottom: espace.xs },
+  poignee: {
+    alignSelf: 'center',
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: couleurs.bordureForte,
+    marginBottom: espace.xs,
+  },
   entreHaut: { flexDirection: 'row', alignItems: 'flex-start', gap: espace.s },
   ligne: { flexDirection: 'row', alignItems: 'center', gap: espace.s },
   iconeAide: {

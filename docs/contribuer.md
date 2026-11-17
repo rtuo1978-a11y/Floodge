@@ -26,10 +26,10 @@ git pull origin backend
 Pour tester tout le projet ensemble en local, il suffit d'avoir les quatre branches dans quatre dossiers :
 
 ```bash
-git worktree add ../floodge-backend backend
-git worktree add ../floodge-mobile frontend-mobile
-git worktree add ../floodge-ia ia
-git worktree add ../floodge-carto cartographie-donnees
+git worktree add ../flowmanage-backend backend
+git worktree add ../flowmanage-mobile frontend-mobile
+git worktree add ../flowmanage-ia ia
+git worktree add ../flowmanage-carto cartographie-donnees
 ```
 
 ## Messages de commit

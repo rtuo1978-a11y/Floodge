@@ -2,11 +2,13 @@ import { useFocusEffect } from 'expo-router';
 import { BellOff, Clock, MapPin, Pause, Volume2 } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
-import { Bandeau, Bouton, Carte, Ecran, EtatVide, PastilleNiveau, Squelette, styles, Texte } from '../../components/ui';
+import { Apparition } from '../../components/anim';
+import { Bandeau, Bouton, Carte, Ecran, EtatVide, PastilleNiveau, Segments, Squelette, styles, Texte } from '../../components/ui';
+import { haptique } from '../../lib/haptique';
 import { api } from '../../lib/api';
 import { distance, ilYa, NIVEAUX_ALERTE } from '../../lib/format';
 import { positionActuelle } from '../../lib/position';
-import type { Alerte } from '../../lib/types';
+import type { Alerte, NiveauAlerte } from '../../lib/types';
 import { arreterLecture, lire, texteAlerte } from '../../lib/voix';
 import { couleurs, espace } from '../../theme';
 
@@ -19,6 +21,7 @@ export default function AlertesEcran() {
   const [erreur, setErreur] = useState<string | null>(null);
   const [enLecture, setEnLecture] = useState<string | null>(null);
   const dejaVues = useRef<Set<string> | null>(null);
+  const [filtre, setFiltre] = useState<'TOUTES' | NiveauAlerte>('TOUTES');
 
   const charger = useCallback(async () => {
     setChargement(true);
@@ -52,6 +55,7 @@ export default function AlertesEcran() {
   useEffect(() => () => void arreterLecture(), []);
 
   async function basculerLecture(a: Alerte) {
+    haptique.selection();
     if (enLecture === a.id) {
       await arreterLecture();
       setEnLecture(null);
@@ -62,17 +66,40 @@ export default function AlertesEcran() {
   }
 
   const nbDanger = alertes?.filter((a) => a.niveau === 'DANGER').length ?? 0;
+  const compte = (n: NiveauAlerte) => alertes?.filter((a) => a.niveau === n).length ?? 0;
+  const visibles = alertes?.filter((a) => filtre === 'TOUTES' || a.niveau === filtre);
 
   return (
     <Ecran
       titre="Alertes"
       sousTitre={
-        alertes ? (alertes.length ? `${alertes.length} en cours${nbDanger ? ` · ${nbDanger} danger` : ''}` : 'Aucune alerte en cours') : 'Chargement…'
+        alertes
+          ? alertes.length
+            ? `${alertes.length} en cours${nbDanger ? ` · ${nbDanger} danger` : ''}`
+            : 'Aucune alerte en cours'
+          : 'Chargement…'
       }
       onRafraichir={charger}
       rafraichissement={chargement && !!alertes}
     >
       {erreur ? <Bandeau type="erreur" texte={erreur} /> : null}
+      {alertes?.length ? (
+        <View style={{ marginBottom: espace.m }}>
+          <Segments
+            options={[
+              { cle: 'TOUTES' as const, libelle: 'Toutes' },
+              { cle: 'DANGER' as const, libelle: `Danger${compte('DANGER') ? ' ' + compte('DANGER') : ''}` },
+              { cle: 'VIGILANCE' as const, libelle: 'Vigilance' },
+              { cle: 'INFO' as const, libelle: 'Info' },
+            ]}
+            valeur={filtre}
+            onChange={(v) => {
+              haptique.selection();
+              setFiltre(v);
+            }}
+          />
+        </View>
+      ) : null}
       {!alertes && !erreur ? (
         <>
           <Squelette hauteur={180} />
@@ -87,43 +114,47 @@ export default function AlertesEcran() {
         />
       ) : null}
 
-      {alertes?.map((a) => {
+      {alertes?.length && !visibles?.length ? <EtatVide icone={BellOff} titre="Aucune alerte de ce niveau" /> : null}
+
+      {visibles?.map((a, i) => {
         const n = NIVEAUX_ALERTE[a.niveau];
         const lecture = enLecture === a.id;
         return (
-          <Carte key={a.id} accent={n.couleur} style={{ paddingLeft: espace.m }}>
-            <View style={styles.entre}>
-              <PastilleNiveau s={n} />
-              <View style={styles.ligne}>
-                <Clock size={14} color={couleurs.texteSecondaire} />
-                <Texte variante="petit" couleur={couleurs.texteSecondaire}>
-                  {a.publieeLe ? ilYa(a.publieeLe) : ''}
-                </Texte>
+          <Apparition key={a.id} index={i}>
+            <Carte accent={n.couleur} style={{ paddingLeft: espace.m }}>
+              <View style={styles.entre}>
+                <PastilleNiveau s={n} />
+                <View style={styles.ligne}>
+                  <Clock size={14} color={couleurs.texteSecondaire} />
+                  <Texte variante="petit" couleur={couleurs.texteSecondaire}>
+                    {a.publieeLe ? ilYa(a.publieeLe) : ''}
+                  </Texte>
+                </View>
               </View>
-            </View>
-            <Texte variante="titre3" style={{ marginTop: espace.sm }}>
-              {a.titre}
-            </Texte>
-            <Texte variante="corps" style={{ marginTop: espace.xs }}>
-              {a.message}
-            </Texte>
-            {a.zone || a.commune || a.distanceKm != null ? (
-              <View style={[styles.ligne, { marginTop: espace.sm }]}>
-                <MapPin size={16} color={couleurs.texteSecondaire} />
-                <Texte variante="petit" couleur={couleurs.texteSecondaire} style={{ flex: 1 }}>
-                  {[a.zone?.nom, a.commune, distance(a.distanceKm)].filter(Boolean).join(' · ')}
-                </Texte>
-              </View>
-            ) : null}
-            <Bouton
-              variante={lecture ? 'primaire' : 'secondaire'}
-              icone={lecture ? Pause : Volume2}
-              libelle={lecture ? 'Arrêter la lecture' : 'Écouter l’alerte'}
-              onPress={() => basculerLecture(a)}
-              petit
-              style={{ marginTop: espace.sm }}
-            />
-          </Carte>
+              <Texte variante="titre3" style={{ marginTop: espace.sm }}>
+                {a.titre}
+              </Texte>
+              <Texte variante="corps" style={{ marginTop: espace.xs }}>
+                {a.message}
+              </Texte>
+              {a.zone || a.commune || a.distanceKm != null ? (
+                <View style={[styles.ligne, { marginTop: espace.sm }]}>
+                  <MapPin size={16} color={couleurs.texteSecondaire} />
+                  <Texte variante="petit" couleur={couleurs.texteSecondaire} style={{ flex: 1 }}>
+                    {[a.zone?.nom, a.commune, distance(a.distanceKm)].filter(Boolean).join(' · ')}
+                  </Texte>
+                </View>
+              ) : null}
+              <Bouton
+                variante={lecture ? 'primaire' : 'secondaire'}
+                icone={lecture ? Pause : Volume2}
+                libelle={lecture ? 'Arrêter la lecture' : 'Écouter l’alerte'}
+                onPress={() => basculerLecture(a)}
+                petit
+                style={{ marginTop: espace.sm }}
+              />
+            </Carte>
+          </Apparition>
         );
       })}
     </Ecran>

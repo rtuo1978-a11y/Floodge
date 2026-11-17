@@ -1,11 +1,10 @@
 /**
- * Composants du design system Floodge.
+ * Composants du design system FlowManage.
  * Documentation (variantes, états, accessibilité) : design/design-system.md
  */
 import type { LucideIcon } from 'lucide-react-native';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
-  AccessibilityInfo,
   ActivityIndicator,
   Animated,
   Platform,
@@ -24,6 +23,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { StyleNiveau } from '../lib/format';
+import { useMouvementReduit } from './anim';
 import { couleurs, espace, ombre, rayon, taille, typo, type VarianteTypo } from '../theme';
 
 // ============================================================ Texte
@@ -166,7 +166,12 @@ export function Bouton({
       ) : (
         <View style={styles.ligneCentree}>
           {Icone ? <Icone size={taille.icone.m} color={desactive ? couleurs.texteDesactive : s.texte} strokeWidth={2.2} /> : null}
-          <Texte variante="bouton" couleur={desactive ? couleurs.texteDesactive : s.texte} numberOfLines={2} style={{ textAlign: 'center' }}>
+          <Texte
+            variante="bouton"
+            couleur={desactive ? couleurs.texteDesactive : s.texte}
+            numberOfLines={2}
+            style={{ textAlign: 'center' }}
+          >
             {libelle}
           </Texte>
         </View>
@@ -228,10 +233,7 @@ export function Champ({
         {libelle}
       </Texte>
       <View
-        style={[
-          styles.champ,
-          { borderColor: bordure, borderWidth: focus || erreur ? 2 : 1.5, minHeight: multiline ? 104 : taille.bouton },
-        ]}
+        style={[styles.champ, { borderColor: bordure, borderWidth: focus || erreur ? 2 : 1.5, minHeight: multiline ? 104 : taille.bouton }]}
       >
         {Icone ? <Icone size={taille.icone.m} color={focus ? couleurs.primaire : couleurs.texteSecondaire} /> : null}
         <TextInput
@@ -293,7 +295,7 @@ export function Carte({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
-      style={({ pressed }) => [...base, pressed ? { backgroundColor: couleurs.primaireTresDoux } : null]}
+      style={({ pressed }) => [...base, pressed ? { backgroundColor: couleurs.primaireTresDoux, transform: [{ scale: 0.99 }] } : null]}
     >
       {children}
     </Pressable>
@@ -302,17 +304,7 @@ export function Carte({
 
 // ============================================================ Pastille (niveau, statut)
 
-export function Pastille({
-  libelle,
-  couleur,
-  fond,
-  icone: Icone,
-}: {
-  libelle: string;
-  couleur: string;
-  fond: string;
-  icone?: LucideIcon;
-}) {
+export function Pastille({ libelle, couleur, fond, icone: Icone }: { libelle: string; couleur: string; fond: string; icone?: LucideIcon }) {
   return (
     <View style={[styles.pastille, { backgroundColor: fond }]}>
       {Icone ? <Icone size={14} color={couleur} strokeWidth={2.5} /> : null}
@@ -383,17 +375,7 @@ export function EnTeteSection({ titre, action }: { titre: string; action?: React
 
 // ============================================================ État vide
 
-export function EtatVide({
-  icone: Icone,
-  titre,
-  texte,
-  action,
-}: {
-  icone: LucideIcon;
-  titre: string;
-  texte?: string;
-  action?: ReactNode;
-}) {
+export function EtatVide({ icone: Icone, titre, texte, action }: { icone: LucideIcon; titre: string; texte?: string; action?: ReactNode }) {
   return (
     <View style={styles.etatVide}>
       <View style={styles.pastilleIcone}>
@@ -414,16 +396,6 @@ export function EtatVide({
 
 // ============================================================ Squelette (chargement)
 
-function useMouvementReduit() {
-  const [reduit, setReduit] = useState(false);
-  useEffect(() => {
-    AccessibilityInfo.isReduceMotionEnabled().then(setReduit).catch(() => null);
-    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduit);
-    return () => sub.remove();
-  }, []);
-  return reduit;
-}
-
 export function Squelette({ hauteur = 96, style }: { hauteur?: number; style?: StyleProp<ViewStyle> }) {
   const opacite = useRef(new Animated.Value(0.55)).current;
   const reduit = useMouvementReduit();
@@ -441,7 +413,10 @@ export function Squelette({ hauteur = 96, style }: { hauteur?: number; style?: S
   return (
     <Animated.View
       accessibilityLabel="Chargement"
-      style={[{ height: hauteur, borderRadius: rayon.l, backgroundColor: couleurs.surfaceAlt, marginBottom: espace.sm, opacity: opacite }, style]}
+      style={[
+        { height: hauteur, borderRadius: rayon.l, backgroundColor: couleurs.surfaceAlt, marginBottom: espace.sm, opacity: opacite },
+        style,
+      ]}
     />
   );
 }
@@ -492,7 +467,14 @@ export function Avatar({ nom, taille: t = 56 }: { nom: string; taille?: number }
     <View
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
-      style={{ width: t, height: t, borderRadius: t / 2, backgroundColor: couleurs.primaireDoux, alignItems: 'center', justifyContent: 'center' }}
+      style={{
+        width: t,
+        height: t,
+        borderRadius: t / 2,
+        backgroundColor: couleurs.primaireDoux,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
     >
       <Texte variante={t > 48 ? 'titre2' : 'petitGras'} couleur={couleurs.primaireFonce}>
         {initiales}
@@ -635,7 +617,6 @@ export const styles = StyleSheet.create({
 });
 
 // ============================================================ Pastille de niveau
-
 
 /** Niveau d'inondation, de risque, d'alerte ou statut : icône + texte + couleur. */
 export function PastilleNiveau({ s, libelle }: { s: StyleNiveau; libelle?: string }) {

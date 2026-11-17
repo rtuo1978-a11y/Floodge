@@ -12,10 +12,14 @@ type Msg = { role: 'user' | 'assistant'; content: string };
 const ACCUEIL: Msg = {
   role: 'assistant',
   content:
-    "Bonjour, je suis l'assistant Floodge. Posez-moi vos questions sur les inondations : quoi faire, comment se préparer, comment utiliser l'application. En cas de danger, appelez le 180.",
+    "Bonjour, je suis l'assistant FlowManage. Posez-moi vos questions sur les inondations : quoi faire, comment se préparer, comment utiliser l'application. En cas de danger, appelez le 180.",
 };
 
-const SUGGESTIONS = ["L'eau monte devant chez moi, je fais quoi ?", 'Comment préparer un sac d’urgence ?', 'Comment gagner le badge Meilleur citoyen ?'];
+const SUGGESTIONS = [
+  "L'eau monte devant chez moi, je fais quoi ?",
+  'Comment préparer un sac d’urgence ?',
+  'Comment gagner le badge Meilleur citoyen ?',
+];
 
 export default function AssistantEcran() {
   const [messages, setMessages] = useState<Msg[]>([ACCUEIL]);
@@ -84,7 +88,11 @@ export default function AssistantEcran() {
             messages.length === 1 ? (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: espace.s, paddingTop: espace.s }}>
                 {SUGGESTIONS.map((s) => (
-                  <Pressable key={s} onPress={() => envoyer(s)} style={({ pressed }) => [styles.suggestion, pressed ? { backgroundColor: couleurs.primaireDoux } : null]}>
+                  <Pressable
+                    key={s}
+                    onPress={() => envoyer(s)}
+                    style={({ pressed }) => [styles.suggestion, pressed ? { backgroundColor: couleurs.primaireDoux } : null]}
+                  >
                     <Texte variante="petitGras" couleur={couleurs.primaire}>
                       {s}
                     </Texte>
@@ -96,7 +104,11 @@ export default function AssistantEcran() {
         />
         <View style={styles.saisie}>
           <TextInput
-            style={[typo.corps, styles.champ, Platform.OS === 'web' ? ({ outlineWidth: 0, outlineStyle: 'none' } as unknown as TextStyle) : null]}
+            style={[
+              typo.corps,
+              styles.champ,
+              Platform.OS === 'web' ? ({ outlineWidth: 0, outlineStyle: 'none' } as unknown as TextStyle) : null,
+            ]}
             value={texte}
             onChangeText={setTexte}
             placeholder="Votre question…"

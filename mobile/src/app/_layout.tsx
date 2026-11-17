@@ -6,7 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Logo } from '../components/Logo';
+import { LogoComplet } from '../components/Logo';
 import { AuthProvider, useAuth } from '../lib/auth';
 import { activerNotifications, useEcouteNotifications } from '../lib/notifications';
 import { couleurs, espace, polices } from '../theme';
@@ -14,14 +14,14 @@ import { couleurs, espace, polices } from '../theme';
 function Chargement() {
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: couleurs.fond, gap: espace.l }}>
-      <Logo taille={72} />
+      <LogoComplet taille={80} vertical />
       <ActivityIndicator color={couleurs.primaire} />
     </View>
   );
 }
 
 function Navigation() {
-  const { utilisateur, chargement } = useAuth();
+  const { utilisateur, chargement, bienvenueVue } = useAuth();
   const connecte = !!utilisateur;
 
   useEcouteNotifications(connecte);
@@ -47,7 +47,7 @@ function Navigation() {
         <Stack.Screen name="(onglets)" options={{ headerShown: false }} />
         <Stack.Screen name="sos" options={{ title: 'Alerte secours', presentation: 'modal' }} />
         <Stack.Screen name="signalement/[id]" options={{ title: 'Signalement' }} />
-        <Stack.Screen name="assistant" options={{ title: 'Assistant Floodge' }} />
+        <Stack.Screen name="assistant" options={{ title: 'Assistant FlowManage' }} />
         <Stack.Protected guard={role === 'AUTORITE' || role === 'ADMIN'}>
           <Stack.Screen name="autorite" options={{ title: 'Espace autorités' }} />
         </Stack.Protected>
@@ -55,7 +55,10 @@ function Navigation() {
           <Stack.Screen name="secours" options={{ title: 'Espace secours' }} />
         </Stack.Protected>
       </Stack.Protected>
-      <Stack.Protected guard={!connecte}>
+      <Stack.Protected guard={!connecte && !bienvenueVue}>
+        <Stack.Screen name="bienvenue" options={{ headerShown: false }} />
+      </Stack.Protected>
+      <Stack.Protected guard={!connecte && bienvenueVue}>
         <Stack.Screen name="connexion" options={{ headerShown: false }} />
         <Stack.Screen name="inscription" options={{ title: 'Créer un compte' }} />
       </Stack.Protected>

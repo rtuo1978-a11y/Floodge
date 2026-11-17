@@ -29,7 +29,10 @@ export default function SignalementEcran() {
   const [action, setAction] = useState<string | null>(null);
 
   const charger = useCallback(() => {
-    api.signalement(id).then(setS).catch((e: Error) => setErreur(e.message));
+    api
+      .signalement(id)
+      .then(setS)
+      .catch((e: Error) => setErreur(e.message));
   }, [id]);
 
   useEffect(charger, [charger]);
@@ -48,11 +51,7 @@ export default function SignalementEcran() {
   }
 
   if (!s) {
-    return (
-      <Ecran enTeteSysteme>
-        {erreur ? <Bandeau type="erreur" texte={erreur} /> : <Squelette hauteur={260} />}
-      </Ecran>
-    );
+    return <Ecran enTeteSysteme>{erreur ? <Bandeau type="erreur" texte={erreur} /> : <Squelette hauteur={260} />}</Ecran>;
   }
 
   const n = NIVEAUX_INONDATION[s.niveau];
@@ -93,7 +92,10 @@ export default function SignalementEcran() {
           </View>
           <Texte variante="corps">{s.analyseIa.resume}</Texte>
           <View style={[ui.ligne, { flexWrap: 'wrap', marginTop: espace.sm }]}>
-            <PastilleNiveau s={NIVEAUX_INONDATION[s.analyseIa.graviteEstimee]} libelle={`Gravité ${NIVEAUX_INONDATION[s.analyseIa.graviteEstimee].libelle.toLowerCase()}`} />
+            <PastilleNiveau
+              s={NIVEAUX_INONDATION[s.analyseIa.graviteEstimee]}
+              libelle={`Gravité ${NIVEAUX_INONDATION[s.analyseIa.graviteEstimee].libelle.toLowerCase()}`}
+            />
             <Texte variante="petitGras" couleur={couleurs.texteSecondaire}>
               Crédibilité {Math.round(s.analyseIa.credibilite * 100)} %
             </Texte>

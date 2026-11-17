@@ -1,4 +1,4 @@
-# Contrat d'API Floodge — v1
+# Contrat d'API FlowManage — v1
 
 Base : `http://<serveur>:3000/api/v1` · Documentation interactive : `http://<serveur>:3000/docs`
 
@@ -59,7 +59,7 @@ Exemple de signalement renvoyé :
 | PATCH | `/alertes/:id/archiver` | 👮 AUTORITE, ADMIN | — | alerte |
 
 **Notification push reçue par le mobile** (`data`) :
-`{ "type": "alerte", "alerteId": "…", "niveau": "DANGER", "texteVocal": "Alerte Floodge. …" }` → l'application lit `texteVocal` à voix haute.
+`{ "type": "alerte", "alerteId": "…", "niveau": "DANGER", "texteVocal": "Alerte FlowManage. …" }` → l'application lit `texteVocal` à voix haute.
 Autres types : `alerte_a_verifier` (autorités), `secours` (secouristes).
 
 ## Secours (SOS)

@@ -2,6 +2,8 @@ import { useRouter } from 'expo-router';
 import { ChevronRight, CloudRain, House, MessageCircle, Sparkles, Volume2, WavesHorizontal, type LucideIcon } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
+import { Apparition } from '../../components/anim';
+import { haptique } from '../../lib/haptique';
 import { Bandeau, Bouton, Carte, Champ, Ecran, EnTeteSection, Segments, Squelette, Texte } from '../../components/ui';
 import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
@@ -27,7 +29,10 @@ export default function ConseilsEcran() {
   const [chargementPerso, setChargementPerso] = useState(false);
 
   useEffect(() => {
-    api.conseils().then(setConseils).catch((e: Error) => setErreur(e.message));
+    api
+      .conseils()
+      .then(setConseils)
+      .catch((e: Error) => setErreur(e.message));
   }, []);
 
   async function demanderConseils() {
@@ -49,7 +54,14 @@ export default function ConseilsEcran() {
     <Ecran titre="Conseils" sousTitre="Les bons réflexes face aux inondations">
       {erreur ? <Bandeau type="erreur" texte={erreur} /> : null}
 
-      <Segments options={MOMENTS} valeur={moment} onChange={setMoment} />
+      <Segments
+        options={MOMENTS}
+        valeur={moment}
+        onChange={(m) => {
+          haptique.selection();
+          setMoment(m);
+        }}
+      />
       <View style={[styles.intro]}>
         <m.icone size={20} color={couleurs.primaire} />
         <Texte variante="petit" couleur={couleurs.texteSecondaire} style={{ flex: 1 }}>
@@ -59,22 +71,24 @@ export default function ConseilsEcran() {
 
       {!conseils && !erreur ? [0, 1, 2].map((i) => <Squelette key={i} hauteur={88} />) : null}
       {liste.map((c, i) => (
-        <Carte key={c.id} onPress={() => lire(`${c.titre}. ${c.contenu}`)} accessibilityLabel={`${c.titre}. ${c.contenu}. Toucher pour écouter`}>
-          <View style={styles.conseil}>
-            <View style={styles.numero}>
-              <Texte variante="petitGras" couleur={couleurs.primaireFonce}>
-                {i + 1}
-              </Texte>
+        <Apparition key={`${moment}-${c.id}`} index={i}>
+          <Carte onPress={() => lire(`${c.titre}. ${c.contenu}`)} accessibilityLabel={`${c.titre}. ${c.contenu}. Toucher pour écouter`}>
+            <View style={styles.conseil}>
+              <View style={styles.numero}>
+                <Texte variante="petitGras" couleur={couleurs.primaireFonce}>
+                  {i + 1}
+                </Texte>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Texte variante="corpsGras">{c.titre}</Texte>
+                <Texte variante="petit" couleur={couleurs.texteSecondaire} style={{ marginTop: espace.xxs }}>
+                  {c.contenu}
+                </Texte>
+              </View>
+              <Volume2 size={18} color={couleurs.primaire} />
             </View>
-            <View style={{ flex: 1 }}>
-              <Texte variante="corpsGras">{c.titre}</Texte>
-              <Texte variante="petit" couleur={couleurs.texteSecondaire} style={{ marginTop: espace.xxs }}>
-                {c.contenu}
-              </Texte>
-            </View>
-            <Volume2 size={18} color={couleurs.primaire} />
-          </View>
-        </Carte>
+          </Carte>
+        </Apparition>
       ))}
 
       {/* Conseils personnalisés par l'IA */}
@@ -88,7 +102,7 @@ export default function ConseilsEcran() {
               Conseils pour ma situation
             </Texte>
             <Texte variante="petit" couleur={couleurs.primaireDoux}>
-              Décrivez ce que vous vivez, l'IA Floodge vous répond.
+              Décrivez ce que vous vivez, l'IA FlowManage vous répond.
             </Texte>
           </View>
         </View>
@@ -100,7 +114,13 @@ export default function ConseilsEcran() {
             onChangeText={setSituation}
             placeholder="Ex. : l'eau entre dans ma cour et j'ai un bébé"
           />
-          <Bouton libelle="Obtenir des conseils" icone={Sparkles} onPress={demanderConseils} chargement={chargementPerso} desactive={!situation.trim()} />
+          <Bouton
+            libelle="Obtenir des conseils"
+            icone={Sparkles}
+            onPress={demanderConseils}
+            chargement={chargementPerso}
+            desactive={!situation.trim()}
+          />
         </View>
       </View>
 

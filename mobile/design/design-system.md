@@ -1,8 +1,10 @@
-# Design system Floodge
+# Design system FlowManage
 
-**Style : « accessible et rassurant ».** Floodge s'adresse à tout le monde, y compris sous la pluie, au soleil, avec un petit téléphone ou dans l'urgence. La lisibilité et le contraste passent avant les effets.
+**Style : « accessible et rassurant ».** FlowManage s'adresse à tout le monde, y compris sous la pluie, au soleil, avec un petit téléphone ou dans l'urgence. La lisibilité et le contraste passent avant les effets.
 
-Code : jetons dans `src/theme.ts`, composants dans `src/components/ui.tsx`, logo dans `src/components/Logo.tsx`.
+Code : jetons dans `src/theme.ts`, composants dans `src/components/ui.tsx`, animations dans `src/components/anim.tsx`, logo dans `src/components/Logo.tsx` (`Logo`, `NomMarque`, `LogoComplet`), retours haptiques dans `src/lib/haptique.ts`.
+
+Logo et règles de placement : `docs/marque/README.md` (branche `main`).
 
 ## Principes
 
@@ -99,7 +101,7 @@ Code : jetons dans `src/theme.ts`, composants dans `src/components/ui.tsx`, logo
 | `Squelette` | `hauteur` | Pulsation (désactivée si « réduire les animations ») | Libellé « Chargement » |
 | `Avatar` | `nom`, `taille` | — | Masqué (le nom est déjà affiché à côté) |
 | `LigneListe` | `icone`, `titre`, `sousTitre`, `droite` | Appuyée | `role=button`, libellé = titre |
-| `Logo` | `taille`, `inverse` | — | Libellé « Logo Floodge » |
+| `Logo` | `taille`, `inverse` | — | Libellé « Logo FlowManage » |
 
 ### À faire / à ne pas faire
 
@@ -110,6 +112,20 @@ Code : jetons dans `src/theme.ts`, composants dans `src/components/ui.tsx`, logo
 | Icône Lucide + libellé | Emoji comme icône |
 | `Champ` avec `libelle` visible | Placeholder comme seul libellé |
 | `BoutonIcone` avec `libelle` | Icône cliquable sans nom accessible |
+
+## Interactions
+
+| Interaction | Où | Détail |
+|---|---|---|
+| Apparition en cascade | listes (alertes, conseils, badges, autorités, secours) | `Apparition` : fondu + glissement de 12 px, 320 ms, décalage de 60 ms par élément (8 max) |
+| Rebond | icône de succès, illustrations de bienvenue | `Rebond` : ressort (friction 4, tension 120) |
+| Progression | objectif de badge (profil) | `BarreProgression` : 700 ms, rôle `progressbar` |
+| Maintien | bouton SOS | 1,5 s d'appui, remplissage rouge foncé ; double toucher avec lecteur d'écran |
+| Filtres | carte (signalements + 4 niveaux de risque), alertes (Toutes / Danger / Vigilance / Info) | puces `checkbox`, segments `tab` |
+| Pages glissées | bienvenue (3 pages) | points de pagination animés, « Passer » toujours visible |
+| Haptique | sélection d'un niveau, d'un filtre, envoi réussi, erreur, SOS | `haptique.selection / appui / succes / erreur / fort` (sans effet dans le navigateur) |
+
+Toutes les animations passent par `useMouvementReduit()` : avec « Réduire les animations », l'état final s'affiche directement.
 
 ## Suite
 

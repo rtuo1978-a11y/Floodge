@@ -2,6 +2,8 @@ import { useFocusEffect } from 'expo-router';
 import { CircleCheck, Clock, LifeBuoy, Navigation, Phone, Users } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
 import { Linking, Platform, View } from 'react-native';
+import { Apparition } from '../components/anim';
+import { haptique } from '../lib/haptique';
 import { Bandeau, Bouton, Carte, Ecran, EtatVide, PastilleNiveau, Squelette, styles as ui, Texte } from '../components/ui';
 import { api } from '../lib/api';
 import { ilYa, STATUTS_SECOURS } from '../lib/format';
@@ -39,6 +41,7 @@ export default function SecoursEcran() {
     setEnCours(d.id);
     try {
       await api.majSecours(d.id, statut);
+      haptique.succes();
       await charger();
     } catch (e) {
       setErreur((e as Error).message);
@@ -74,52 +77,83 @@ export default function SecoursEcran() {
         </>
       ) : null}
       {demandes && !demandes.length ? (
-        <EtatVide icone={LifeBuoy} titre="Aucune demande en cours" texte="Les nouvelles demandes SOS apparaîtront ici et sur vos notifications." />
+        <EtatVide
+          icone={LifeBuoy}
+          titre="Aucune demande en cours"
+          texte="Les nouvelles demandes SOS apparaîtront ici et sur vos notifications."
+        />
       ) : null}
 
-      {demandes?.map((d) => {
+      {demandes?.map((d, i) => {
         const st = STATUTS_SECOURS[d.statut];
         const tel = d.telephone ?? d.demandeur?.telephone;
         return (
-          <Carte key={d.id} accent={st.couleur}>
-            <View style={ui.entre}>
-              <PastilleNiveau s={st} />
-              <View style={ui.ligne}>
-                <Clock size={14} color={couleurs.texteSecondaire} />
-                <Texte variante="petit" couleur={couleurs.texteSecondaire}>
-                  {ilYa(d.createdAt)}
+          <Apparition key={d.id} index={i}>
+            <Carte accent={st.couleur}>
+              <View style={ui.entre}>
+                <PastilleNiveau s={st} />
+                <View style={ui.ligne}>
+                  <Clock size={14} color={couleurs.texteSecondaire} />
+                  <Texte variante="petit" couleur={couleurs.texteSecondaire}>
+                    {ilYa(d.createdAt)}
+                  </Texte>
+                </View>
+              </View>
+              <View style={[ui.ligne, { marginTop: espace.sm }]}>
+                <Users size={20} color={couleurs.texte} />
+                <Texte variante="titre3">
+                  {d.nbPersonnes} personne{d.nbPersonnes > 1 ? 's' : ''} — {d.demandeur?.nom ?? 'Citoyen'}
                 </Texte>
               </View>
-            </View>
-            <View style={[ui.ligne, { marginTop: espace.sm }]}>
-              <Users size={20} color={couleurs.texte} />
-              <Texte variante="titre3">
-                {d.nbPersonnes} personne{d.nbPersonnes > 1 ? 's' : ''} — {d.demandeur?.nom ?? 'Citoyen'}
-              </Texte>
-            </View>
-            {d.description ? (
-              <Texte variante="corps" style={{ marginTop: espace.xs }}>
-                {d.description}
-              </Texte>
-            ) : null}
-            {d.secouriste ? (
-              <Texte variante="petit" couleur={couleurs.texteSecondaire} style={{ marginTop: espace.xs }}>
-                Équipe : {d.secouriste.nom}
-              </Texte>
-            ) : null}
-
-            <View style={[ui.ligne, { marginTop: espace.sm }]}>
-              <Bouton libelle="Itinéraire" icone={Navigation} variante="contour" petit onPress={() => itineraire(d)} style={{ flex: 1 }} />
-              {tel ? (
-                <Bouton libelle="Appeler" icone={Phone} variante="contour" petit onPress={() => Linking.openURL(`tel:${tel}`)} style={{ flex: 1 }} />
+              {d.description ? (
+                <Texte variante="corps" style={{ marginTop: espace.xs }}>
+                  {d.description}
+                </Texte>
               ) : null}
-            </View>
-            {d.statut === 'EN_ATTENTE' ? (
-              <Bouton libelle="Prendre en charge" icone={LifeBuoy} variante="danger" chargement={enCours === d.id} onPress={() => changer(d, 'PRISE_EN_CHARGE')} />
-            ) : (
-              <Bouton libelle="Intervention terminée" icone={CircleCheck} chargement={enCours === d.id} onPress={() => changer(d, 'TERMINEE')} />
-            )}
-          </Carte>
+              {d.secouriste ? (
+                <Texte variante="petit" couleur={couleurs.texteSecondaire} style={{ marginTop: espace.xs }}>
+                  Équipe : {d.secouriste.nom}
+                </Texte>
+              ) : null}
+
+              <View style={[ui.ligne, { marginTop: espace.sm }]}>
+                <Bouton
+                  libelle="Itinéraire"
+                  icone={Navigation}
+                  variante="contour"
+                  petit
+                  onPress={() => itineraire(d)}
+                  style={{ flex: 1 }}
+                />
+                {tel ? (
+                  <Bouton
+                    libelle="Appeler"
+                    icone={Phone}
+                    variante="contour"
+                    petit
+                    onPress={() => Linking.openURL(`tel:${tel}`)}
+                    style={{ flex: 1 }}
+                  />
+                ) : null}
+              </View>
+              {d.statut === 'EN_ATTENTE' ? (
+                <Bouton
+                  libelle="Prendre en charge"
+                  icone={LifeBuoy}
+                  variante="danger"
+                  chargement={enCours === d.id}
+                  onPress={() => changer(d, 'PRISE_EN_CHARGE')}
+                />
+              ) : (
+                <Bouton
+                  libelle="Intervention terminée"
+                  icone={CircleCheck}
+                  chargement={enCours === d.id}
+                  onPress={() => changer(d, 'TERMINEE')}
+                />
+              )}
+            </Carte>
+          </Apparition>
         );
       })}
     </Ecran>

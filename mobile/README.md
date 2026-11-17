@@ -1,8 +1,10 @@
-# Floodge — Application mobile
+# FlowManage — Application mobile
 
 Application des habitants, des autorités et des secours.
 **React Native · Expo SDK 58 · Expo Router · react-native-maps (Google Maps) · Lucide**
 
+> **Logo** : `src/components/Logo.tsx` et icônes d'application dans `assets/` — règles de placement : `docs/marque/README.md` (branche `main`).
+>
 > **Design system** : style « accessible et rassurant » (bleu de l'eau, rouge réservé au danger et au SOS, icônes Lucide, polices Lexend + Atkinson Hyperlegible, contrastes WCAG AA vérifiés).
 > - Jetons : `src/theme.ts` — composants : `src/components/ui.tsx`
 > - Documentation : [`design/design-system.md`](design/design-system.md) et spécifications écran par écran : [`design/handoff.md`](design/handoff.md)
@@ -12,14 +14,15 @@ Application des habitants, des autorités et des secours.
 
 | Onglet / écran | Fichier | Fonction |
 |---|---|---|
-| Carte | `src/app/(onglets)/index.tsx` | Zones à risque colorées, signalements, bandeau d'alerte, **itinéraire sûr** (appui long = destination), bouton **SOS** |
-| Alertes | `src/app/(onglets)/alertes.tsx` | Alertes en cours triées par distance, **lecture vocale**, rechargement toutes les minutes, lecture automatique des nouvelles alertes DANGER |
+| Bienvenue | `src/app/bienvenue.tsx` | 3 pages de présentation à la première ouverture |
+| Carte | `src/app/(onglets)/index.tsx` | Zones à risque colorées, **filtres** (signalements, niveaux de risque), bandeau d'alerte, **itinéraire sûr** (appui long = destination), bouton **SOS** |
+| Alertes | `src/app/(onglets)/alertes.tsx` | Alertes en cours triées par distance, **filtres par niveau**, **lecture vocale**, rechargement toutes les minutes, lecture automatique des nouvelles alertes DANGER |
 | Signaler | `src/app/(onglets)/signaler.tsx` | Position GPS, niveau (faible / modéré / élevé), description, photo |
 | Conseils | `src/app/(onglets)/conseils.tsx` | Conseils avant / pendant / après (écoute vocale), conseils personnalisés par l'IA |
-| Profil | `src/app/(onglets)/profil.tsx` | Points, **badges**, classement **Meilleur citoyen du mois**, mes signalements |
-| SOS | `src/app/sos.tsx` | Alerte secours avec position, suivi de la prise en charge, numéros d'urgence (180, 185, 110) |
+| Profil | `src/app/(onglets)/profil.tsx` | Points, **prochain objectif** (barre de progression), **badges**, classement **Meilleur citoyen du mois**, mes signalements |
+| SOS | `src/app/sos.tsx` | Alerte secours (**maintenir 1,5 s**) avec position, suivi de la prise en charge, numéros d'urgence (180, 185, 110) |
 | Signalement | `src/app/signalement/[id].tsx` | Détail, « je vois aussi l'eau », vérification par les autorités, analyse IA |
-| Assistant | `src/app/assistant.tsx` | Discussion avec l'IA Floodge |
+| Assistant | `src/app/assistant.tsx` | Discussion avec l'IA FlowManage |
 | Espace autorités | `src/app/autorite.tsx` | Publier les alertes proposées par le moteur de règles, vérifier les signalements |
 | Espace secours | `src/app/secours.tsx` | Demandes SOS, prise en charge, itinéraire, appel |
 
@@ -39,7 +42,7 @@ Le code qui parle à l'API est regroupé dans `src/lib/api.ts` (même noms de ro
 
 3. Scanner le QR code avec **Expo Go** (Android / iOS). Le téléphone et l'ordinateur doivent être sur le **même Wi-Fi**.
 
-Comptes de test (après `npm run seed` côté back-end, mot de passe `Floodge2026!`) : `citoyen1@floodge.ci`, `autorite@floodge.ci`, `secours@floodge.ci`.
+Comptes de test (après `npm run seed` côté back-end, mot de passe `FlowManage2026!`) : `citoyen1@flowmanage.ci`, `autorite@flowmanage.ci`, `secours@flowmanage.ci`.
 
 ## Voir l'application dans le navigateur (sans téléphone)
 

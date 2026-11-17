@@ -14,7 +14,19 @@ import {
 } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Avatar, Bouton, Carte, Ecran, EnTeteSection, EtatVide, LigneListe, PastilleNiveau, styles as ui, Texte } from '../../components/ui';
+import { Apparition, BarreProgression } from '../../components/anim';
+import {
+  Avatar,
+  Bouton,
+  Carte,
+  Ecran,
+  EnTeteSection,
+  EtatVide,
+  LigneListe,
+  PastilleNiveau,
+  styles as ui,
+  Texte,
+} from '../../components/ui';
 import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { ilYa, NIVEAUX_INONDATION, rang, STATUTS_SIGNALEMENT } from '../../lib/format';
@@ -62,8 +74,35 @@ export default function ProfilEcran() {
   );
 
   if (!utilisateur) return null;
-  const monRang = classement?.classement.find((c) => c.userId === utilisateur.id)?.rang;
+  const moi = classement?.classement.find((c) => c.userId === utilisateur.id);
+  const monRang = moi?.rang;
   const role = utilisateur.role;
+
+  // Prochain objectif (gamification « Meilleur citoyen »)
+  const codes = new Set(utilisateur.badges?.map((b) => b.badge.code));
+  const confirmes = mesSignalements.filter((s) => s.statut === 'CONFIRME' || s.statut === 'RESOLU').length;
+  const premier = classement?.classement[0];
+  const objectif = !codes.has('SENTINELLE')
+    ? { badge: 'SENTINELLE', titre: 'Sentinelle', detail: 'Envoyez votre premier signalement', valeur: mesSignalements.length, cible: 1 }
+    : !codes.has('VIGIE_QUARTIER')
+      ? {
+          badge: 'VIGIE_QUARTIER',
+          titre: 'Vigie du quartier',
+          detail: `${confirmes}/5 signalements confirmés par les autorités`,
+          valeur: confirmes,
+          cible: 5,
+        }
+      : {
+          badge: 'MEILLEUR_CITOYEN',
+          titre: 'Meilleur citoyen du mois',
+          detail:
+            monRang === 1
+              ? 'Vous êtes en tête ce mois-ci, continuez !'
+              : `${Math.max(0, (premier?.score ?? 0) - (moi?.score ?? 0))} points d'écart avec le 1er`,
+          valeur: moi?.score ?? 0,
+          cible: Math.max(1, premier?.score ?? 1),
+        };
+  const styleObjectif = BADGES[objectif.badge];
 
   return (
     <Ecran titre="Mon profil" onRafraichir={charger} rafraichissement={chargement}>
@@ -98,6 +137,28 @@ export default function ProfilEcran() {
         </View>
       </View>
 
+      <Apparition index={1}>
+        <Carte style={{ marginTop: espace.m }}>
+          <View style={ui.ligne}>
+            <View style={[styles.iconeObjectif, { backgroundColor: styleObjectif.fond }]}>
+              <styleObjectif.icone size={22} color={styleObjectif.couleur} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Texte variante="legende" couleur={couleurs.texteSecondaire}>
+                PROCHAIN OBJECTIF
+              </Texte>
+              <Texte variante="corpsGras">{objectif.titre}</Texte>
+            </View>
+          </View>
+          <View style={{ marginTop: espace.sm }}>
+            <BarreProgression valeur={objectif.valeur / objectif.cible} couleur={styleObjectif.couleur} fond={styleObjectif.fond} />
+          </View>
+          <Texte variante="petit" couleur={couleurs.texteSecondaire} style={{ marginTop: espace.xs }}>
+            {objectif.detail}
+          </Texte>
+        </Carte>
+      </Apparition>
+
       {role !== 'CITOYEN' ? (
         <>
           <EnTeteSection titre="Mon espace" />
@@ -130,20 +191,22 @@ export default function ProfilEcran() {
       <EnTeteSection titre="Mes badges" />
       {utilisateur.badges?.length ? (
         <View style={styles.grille}>
-          {utilisateur.badges.map((b) => {
+          {utilisateur.badges.map((b, i) => {
             const st = BADGES[b.badge.code] ?? { icone: Award, couleur: couleurs.primaire, fond: couleurs.primaireDoux };
             return (
-              <View key={b.id} style={styles.badge} accessible accessibilityLabel={`Badge ${b.badge.nom}`}>
-                <View style={[styles.iconeBadge, { backgroundColor: st.fond }]}>
-                  <st.icone size={26} color={st.couleur} strokeWidth={2.2} />
+              <Apparition key={b.id} index={i} style={styles.badgeCase}>
+                <View style={styles.badge} accessible accessibilityLabel={`Badge ${b.badge.nom}`}>
+                  <View style={[styles.iconeBadge, { backgroundColor: st.fond }]}>
+                    <st.icone size={26} color={st.couleur} strokeWidth={2.2} />
+                  </View>
+                  <Texte variante="petitGras" style={{ textAlign: 'center' }}>
+                    {b.badge.nom}
+                  </Texte>
+                  <Texte variante="legende" couleur={couleurs.texteSecondaire} style={{ textAlign: 'center' }}>
+                    {b.periode || b.badge.description}
+                  </Texte>
                 </View>
-                <Texte variante="petitGras" style={{ textAlign: 'center' }}>
-                  {b.badge.nom}
-                </Texte>
-                <Texte variante="legende" couleur={couleurs.texteSecondaire} style={{ textAlign: 'center' }}>
-                  {b.periode || b.badge.description}
-                </Texte>
-              </View>
+              </Apparition>
             );
           })}
         </View>
@@ -233,9 +296,10 @@ const styles = StyleSheet.create({
   },
   stat: { flex: 1, alignItems: 'center' },
   grille: { flexDirection: 'row', flexWrap: 'wrap', gap: espace.sm },
+  badgeCase: { width: '48%', flexGrow: 1 },
+  iconeObjectif: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   badge: {
-    width: '48%',
-    flexGrow: 1,
+    flex: 1,
     backgroundColor: couleurs.surface,
     borderRadius: rayon.l,
     borderWidth: 1,

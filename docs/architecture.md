@@ -1,4 +1,4 @@
-# Architecture de Floodge
+# Architecture de FlowManage
 
 ```
                 ┌──────────────────────────────────────────┐
@@ -18,7 +18,7 @@
    (clé INTERNAL_API_KEY)                         │
 ┌──────────────────────▼─────────┐   ┌────────────▼────────────────────┐
 │   Service IA (ia/)             │   │ Service cartographie            │
-│   FastAPI → Ollama "floodge"   │   │ (cartographie/) Node.js         │
+│   FastAPI → Ollama "flowmanage"   │   │ (cartographie/) Node.js         │
 │   conseils · analyse ·         │   │ zones GeoJSON · SODEXAM ·       │
 │   texte d'alerte vocale        │   │ score de risque · itinéraires   │
 └────────────────────────────────┘   │ sûrs (Google Directions)        │

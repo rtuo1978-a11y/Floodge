@@ -3,7 +3,9 @@ import { useRouter } from 'expo-router';
 import { Camera, CircleCheck, ImagePlus, MapPin, RefreshCw, Send, Siren, X } from 'lucide-react-native';
 import { useEffect, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, View } from 'react-native';
+import { Apparition, Rebond } from '../../components/anim';
 import { Bandeau, Bouton, BoutonIcone, Champ, Ecran, Texte } from '../../components/ui';
+import { haptique } from '../../lib/haptique';
 import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { NIVEAUX_INONDATION } from '../../lib/format';
@@ -75,14 +77,16 @@ export default function SignalerEcran() {
       await api.signaler({ ...position, niveau, description: description.trim(), photoUrl });
       setSucces(
         niveau === 'ELEVE'
-          ? 'Signalement envoyé. Si des personnes sont en danger, utilisez aussi le bouton SOS.'
-          : 'Merci ! Votre signalement est visible sur la carte et sera vérifié. +5 points citoyens.',
+          ? 'Si des personnes sont en danger, utilisez aussi le bouton SOS.'
+          : 'Merci ! Il est visible sur la carte et sera vérifié. +5 points citoyens.',
       );
+      haptique.succes();
       setNiveau(null);
       setDescription('');
       setPhoto(null);
       void rafraichir(); // points et badges
     } catch (e) {
+      haptique.erreur();
       setErreur((e as Error).message);
     } finally {
       setEnvoi(false);
@@ -93,13 +97,34 @@ export default function SignalerEcran() {
 
   return (
     <Ecran titre="Signaler une inondation" sousTitre="Votre signalement aide les secours et prévient vos voisins.">
-      {succes ? <Bandeau type="succes" icone={CircleCheck} texte={succes} /> : null}
+      {succes ? (
+        <Apparition>
+          <View style={styles.succes} accessibilityLiveRegion="polite">
+            <Rebond>
+              <View style={styles.iconeSucces}>
+                <CircleCheck size={36} color={couleurs.surFonce} strokeWidth={2.4} />
+              </View>
+            </Rebond>
+            <View style={{ flex: 1 }}>
+              <Texte variante="titre3" couleur={couleurs.succes}>
+                Signalement envoyé
+              </Texte>
+              <Texte variante="petit">{succes}</Texte>
+            </View>
+            <BoutonIcone icone={X} libelle="Fermer le message" onPress={() => setSucces(null)} variante="transparent" />
+          </View>
+        </Apparition>
+      ) : null}
       {erreur ? <Bandeau type="erreur" texte={erreur} /> : null}
 
       <Etape numero={1} titre="Où êtes-vous ?" fait={!!position}>
         <View style={styles.carteLieu}>
           <View style={styles.iconeLieu}>
-            {localisation === 'recherche' ? <ActivityIndicator color={couleurs.primaire} /> : <MapPin size={20} color={couleurs.primaire} />}
+            {localisation === 'recherche' ? (
+              <ActivityIndicator color={couleurs.primaire} />
+            ) : (
+              <MapPin size={20} color={couleurs.primaire} />
+            )}
           </View>
           <View style={{ flex: 1 }}>
             <Texte variante="corpsGras">
@@ -125,7 +150,10 @@ export default function SignalerEcran() {
             return (
               <Pressable
                 key={n}
-                onPress={() => setNiveau(n)}
+                onPress={() => {
+                  haptique.selection();
+                  setNiveau(n);
+                }}
                 accessibilityRole="radio"
                 accessibilityState={{ checked: actif }}
                 accessibilityLabel={`${s.libelle} : ${s.aide}`}
@@ -197,6 +225,25 @@ export default function SignalerEcran() {
 
 const styles = StyleSheet.create({
   ligne: { flexDirection: 'row', alignItems: 'center', gap: espace.s },
+  succes: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espace.sm,
+    backgroundColor: couleurs.succesDoux,
+    borderRadius: rayon.l,
+    borderWidth: 1.5,
+    borderColor: couleurs.succes,
+    padding: espace.sm,
+    marginBottom: espace.l,
+  },
+  iconeSucces: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: couleurs.succes,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   numero: {
     width: 28,
     height: 28,

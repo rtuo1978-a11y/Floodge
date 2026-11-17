@@ -1,23 +1,23 @@
 {
   "expo": {
-    "name": "Floodge",
-    "slug": "floodge",
-    "scheme": "floodge",
+    "name": "FlowManage",
+    "slug": "flowmanage",
+    "scheme": "flowmanage",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "ci.floodge.app",
+      "bundleIdentifier": "ci.flowmanage.app",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Floodge utilise votre position pour localiser vos signalements et vous alerter des inondations proches."
+        "NSLocationWhenInUseUsageDescription": "FlowManage utilise votre position pour localiser vos signalements et vous alerter des inondations proches."
       }
     },
     "android": {
-      "package": "ci.floodge.app",
+      "package": "ci.flowmanage.app",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#0369A1",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -38,20 +38,30 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Floodge utilise votre position pour localiser vos signalements et vous alerter des inondations proches."
+          "locationWhenInUsePermission": "FlowManage utilise votre position pour localiser vos signalements et vous alerter des inondations proches."
         }
       ],
       [
         "expo-image-picker",
         {
-          "cameraPermission": "Floodge utilise l'appareil photo pour joindre une photo à vos signalements.",
-          "photosPermission": "Floodge accède à vos photos pour les joindre à vos signalements."
+          "cameraPermission": "FlowManage utilise l'appareil photo pour joindre une photo à vos signalements.",
+          "photosPermission": "FlowManage accède à vos photos pour les joindre à vos signalements."
         }
       ],
       [
         "expo-notifications",
         {
-          "color": "#0B5FA5"
+          "color": "#0369A1",
+          "icon": "./assets/android-icon-monochrome.png"
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 180,
+          "resizeMode": "contain",
+          "backgroundColor": "#F4F8FB"
         }
       ]
     ],
@@ -59,6 +69,7 @@
       "eas": {
         "projectId": ""
       }
-    }
+    },
+    "description": "FlowManage — prévention et gestion des inondations en Côte d'Ivoire. Anticiper, alerter, protéger."
   }
 }
