@@ -1,0 +1,32 @@
+# Dépendances
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+
+# Builds
+dist/
+build/
+.expo/
+web-build/
+*.tsbuildinfo
+coverage/
+.pytest_cache/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Fichiers envoyés en local
+uploads/
+
+# Prisma
+backend/src/generated/
+
+# Divers
+.DS_Store
+*.log
+.idea/
+.vscode/
+*.gguf
