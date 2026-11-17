@@ -129,3 +129,10 @@ def test_validation_des_entrees():
 def test_repli_sans_accents():
     a = repli.analyser("Personne âgée bloquée à l'étage, l'eau est entrée dans la maison", "MODERE")
     assert a.besoinSecours is True
+
+
+def test_vehicules_bloques_ne_declenchent_pas_les_secours():
+    a = repli.analyser("La voie est sous l'eau, les voitures sont bloquées au carrefour", "MODERE")
+    assert a.besoinSecours is False
+    b = repli.analyser("Les voitures sont bloquées et une famille est coincée dedans", "ELEVE")
+    assert b.besoinSecours is True

@@ -38,6 +38,11 @@ def analyser(description: str, niveau: Niveau) -> AnalyseSignalement:
     texte = _normaliser(description)
 
     secours = _contient(texte, MOTS_SECOURS)
+    # « les voitures sont bloquées » : ce sont des véhicules, pas des personnes en danger
+    if "bloque" in secours and re.search(
+        r"\b(voitures?|vehicules?|motos?|gbakas?|woro\w*|taxis?|circulation|routes?|voies?)\W+(\w+\W+){0,2}bloque", texte
+    ) and not re.search(r"\b(personnes?|gens|famille|enfants?|on est|nous sommes|je suis)\b", texte):
+        secours.remove("bloque")
     eleve = _contient(texte, MOTS_ELEVE)
     modere = _contient(texte, MOTS_MODERE)
     lieux = _contient(texte, MOTS_LIEU)
