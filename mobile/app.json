@@ -1,0 +1,64 @@
+{
+  "expo": {
+    "name": "Floodge",
+    "slug": "floodge",
+    "scheme": "floodge",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "ci.floodge.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Floodge utilise votre position pour localiser vos signalements et vous alerter des inondations proches."
+      }
+    },
+    "android": {
+      "package": "ci.floodge.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Floodge utilise votre position pour localiser vos signalements et vous alerter des inondations proches."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Floodge utilise l'appareil photo pour joindre une photo à vos signalements.",
+          "photosPermission": "Floodge accède à vos photos pour les joindre à vos signalements."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#0B5FA5"
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": ""
+      }
+    }
+  }
+}
