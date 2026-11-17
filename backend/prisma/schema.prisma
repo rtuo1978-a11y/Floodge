@@ -1,0 +1,244 @@
+// Schéma de la base Floodge (Supabase / PostgreSQL)
+// Après modification : npx prisma migrate dev --name <description>
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  CITOYEN
+  SECOURISTE
+  AUTORITE
+  ADMIN
+}
+
+enum NiveauInondation {
+  FAIBLE // eau peu profonde
+  MODERE // circulation perturbée
+  ELEVE // danger important
+}
+
+enum StatutSignalement {
+  EN_ATTENTE
+  CONFIRME
+  REJETE
+  RESOLU
+}
+
+enum NiveauRisque {
+  FAIBLE
+  MODERE
+  ELEVE
+  TRES_ELEVE
+}
+
+enum NiveauAlerte {
+  INFO
+  VIGILANCE
+  DANGER
+}
+
+enum TypeAlerte {
+  PREVENTION
+  INONDATION
+  SECOURS
+}
+
+enum StatutAlerte {
+  BROUILLON // proposée (règles / IA) ou en cours de rédaction
+  PUBLIEE
+  ARCHIVEE
+}
+
+enum OrigineAlerte {
+  MANUELLE
+  AUTOMATIQUE
+}
+
+enum StatutSecours {
+  EN_ATTENTE
+  PRISE_EN_CHARGE
+  TERMINEE
+  ANNULEE
+}
+
+enum MomentConseil {
+  AVANT
+  PENDANT
+  APRES
+}
+
+model User {
+  id           String   @id @default(uuid())
+  nom          String
+  email        String   @unique
+  telephone    String?
+  motDePasse   String // hash bcrypt
+  role         Role     @default(CITOYEN)
+  commune      String?
+  points       Int      @default(0)
+  pushToken    String?
+  latitude     Float? // dernière position connue (pour cibler les alertes)
+  longitude    Float?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  signalements          Signalement[]    @relation("auteur")
+  signalementsVerifies  Signalement[]    @relation("verificateur")
+  confirmations         Confirmation[]
+  alertesCreees         Alerte[]
+  demandesSecours       DemandeSecours[] @relation("demandeur")
+  interventions         DemandeSecours[] @relation("secouriste")
+  badges                BadgeUtilisateur[]
+}
+
+model Signalement {
+  id            String            @id @default(uuid())
+  auteurId      String
+  auteur        User              @relation("auteur", fields: [auteurId], references: [id], onDelete: Cascade)
+  latitude      Float
+  longitude     Float
+  commune       String?
+  niveau        NiveauInondation
+  description   String
+  photoUrl      String?
+  statut        StatutSignalement @default(EN_ATTENTE)
+  analyseIa     Json? // { graviteEstimee, credibilite, resume, ... }
+  verificateurId String?
+  verificateur  User?             @relation("verificateur", fields: [verificateurId], references: [id])
+  verifieLe     DateTime?
+  zoneId        String?
+  zone          ZoneRisque?       @relation(fields: [zoneId], references: [id])
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  confirmations Confirmation[]
+
+  @@index([createdAt])
+  @@index([statut])
+}
+
+// Un citoyen confirme le signalement d'un autre ("je vois aussi l'eau")
+model Confirmation {
+  id            String      @id @default(uuid())
+  signalementId String
+  signalement   Signalement @relation(fields: [signalementId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+
+  @@unique([signalementId, userId])
+}
+
+model ZoneRisque {
+  id          String       @id @default(uuid())
+  code        String       @unique // identifiant stable venant du service cartographie
+  nom         String
+  commune     String
+  geometrie   Json // GeoJSON Polygon ou MultiPolygon
+  niveau      NiveauRisque @default(FAIBLE)
+  score       Float        @default(0) // 0 → 100, calculé par le service cartographie
+  source      String // ex. "démonstration", "SODEXAM + historique"
+  estDemo     Boolean      @default(true)
+  majLe       DateTime     @updatedAt
+
+  signalements Signalement[]
+  alertes      Alerte[]
+}
+
+model Alerte {
+  id           String        @id @default(uuid())
+  titre        String
+  message      String
+  texteVocal   String? // version courte lue à voix haute sur le téléphone
+  niveau       NiveauAlerte
+  type         TypeAlerte    @default(INONDATION)
+  statut       StatutAlerte  @default(BROUILLON)
+  origine      OrigineAlerte @default(MANUELLE)
+  zoneId       String?
+  zone         ZoneRisque?   @relation(fields: [zoneId], references: [id])
+  commune      String?
+  latitude     Float?
+  longitude    Float?
+  rayonKm      Float?
+  auteurId     String?
+  auteur       User?         @relation(fields: [auteurId], references: [id])
+  publieeLe    DateTime?
+  expireLe     DateTime?
+  createdAt    DateTime      @default(now())
+
+  @@index([statut, publieeLe])
+}
+
+model DemandeSecours {
+  id           String        @id @default(uuid())
+  demandeurId  String
+  demandeur    User          @relation("demandeur", fields: [demandeurId], references: [id], onDelete: Cascade)
+  latitude     Float
+  longitude    Float
+  nbPersonnes  Int           @default(1)
+  description  String?
+  telephone    String?
+  statut       StatutSecours @default(EN_ATTENTE)
+  secouristeId String?
+  secouriste   User?         @relation("secouriste", fields: [secouristeId], references: [id])
+  priseEnChargeLe DateTime?
+  termineeLe   DateTime?
+  createdAt    DateTime      @default(now())
+
+  @@index([statut])
+}
+
+// Observations météo / hydrologiques (stations SODEXAM ou autres sources)
+model ObservationMeteo {
+  id          String   @id @default(uuid())
+  source      String   @default("SODEXAM")
+  stationCode String
+  stationNom  String?
+  latitude    Float
+  longitude   Float
+  pluieMm     Float? // cumul de pluie sur la période
+  periodeH    Int      @default(1) // durée de la période de cumul, en heures
+  niveauEauCm Float?
+  observeLe   DateTime
+  createdAt   DateTime @default(now())
+
+  @@unique([source, stationCode, observeLe])
+  @@index([observeLe])
+}
+
+model Conseil {
+  id        String        @id @default(uuid())
+  titre     String
+  contenu   String
+  moment    MomentConseil
+  ordre     Int           @default(0)
+}
+
+model Badge {
+  id          String  @id @default(uuid())
+  code        String  @unique
+  nom         String
+  description String
+  icone       String? // nom d'icône pour le mobile
+
+  utilisateurs BadgeUtilisateur[]
+}
+
+model BadgeUtilisateur {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badgeId   String
+  badge     Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  periode   String   @default("") // ex. "2026-11" pour le meilleur citoyen du mois
+  obtenuLe  DateTime @default(now())
+
+  @@unique([userId, badgeId, periode])
+}
