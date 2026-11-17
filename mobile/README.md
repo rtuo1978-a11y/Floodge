@@ -38,6 +38,15 @@ Le code qui parle à l'API est regroupé dans `src/lib/api.ts` (même noms de ro
 
 Comptes de test (après `npm run seed` côté back-end, mot de passe `Floodge2026!`) : `citoyen1@floodge.ci`, `autorite@floodge.ci`, `secours@floodge.ci`.
 
+## Voir l'application dans le navigateur (sans téléphone)
+
+```bash
+npm run web          # ouvre http://localhost:8081
+```
+
+Dans ce mode, la carte Google est remplacée par une **carte simplifiée** (zones et signalements dessinés sans fond de carte réel) : `react-native-maps` ne fonctionne que sur téléphone. Le reste de l'application est identique. Les remplacements sont dans `apercu-web/` et `metro.config.js`.
+Pour l'aperçu web, mettre `EXPO_PUBLIC_API_URL=http://localhost:3000/api/v1` dans `.env`.
+
 ## Notifications push et alertes vocales
 
 - Dans **Expo Go**, les alertes sont rechargées toutes les minutes dans l'onglet Alertes et les nouvelles alertes DANGER sont **lues à voix haute** automatiquement.
