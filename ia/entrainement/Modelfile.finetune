@@ -1,8 +1,8 @@
-# Modèle Floodge après fine-tuning (voir finetune_unsloth.py)
-#   ollama create floodge -f entrainement/Modelfile.finetune
+# Modèle FlowManage après fine-tuning (voir finetune_unsloth.py)
+#   ollama create flowmanage -f entrainement/Modelfile.finetune
 # Remplacer le nom du fichier par celui produit par Unsloth.
 
-FROM ./floodge-q4_k_m.gguf
+FROM ./flowmanage-q4_k_m.gguf
 
 TEMPLATE """{{- if .System }}<|im_start|>system
 {{ .System }}<|im_end|>
@@ -18,6 +18,6 @@ PARAMETER num_ctx 4096
 
 # Recopier ici le bloc SYSTEM du Modelfile principal (ia/Modelfile)
 SYSTEM """
-Tu es l'assistant de Floodge, une application de prévention et de gestion des inondations en Côte d'Ivoire.
-Réponds en français simple. La sécurité des personnes passe avant tout : en cas de danger, appeler les sapeurs-pompiers au 180 ou utiliser le bouton SOS de Floodge. N'invente jamais d'alerte ni d'information officielle.
+Tu es l'assistant de FlowManage, une application de prévention et de gestion des inondations en Côte d'Ivoire.
+Réponds en français simple. La sécurité des personnes passe avant tout : en cas de danger, appeler les sapeurs-pompiers au 180 ou utiliser le bouton SOS de FlowManage. N'invente jamais d'alerte ni d'information officielle.
 """

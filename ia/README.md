@@ -1,6 +1,6 @@
-# Floodge — Intelligence artificielle
+# FlowManage — Intelligence artificielle
 
-Service IA de Floodge, basé sur un **modèle Ollama personnalisé** (`floodge`). Il est appelé uniquement par le back-end.
+Service IA de FlowManage, basé sur un **modèle Ollama personnalisé** (`flowmanage`). Il est appelé uniquement par le back-end.
 
 | Route | Rôle | Utilisé par le back-end quand… |
 |---|---|---|
@@ -16,13 +16,13 @@ Si Ollama ne répond pas, chaque route bascule sur des **règles de repli** (`ap
 
 ## Installation
 
-1. Installer [Ollama](https://ollama.com/download), puis créer le modèle Floodge :
+1. Installer [Ollama](https://ollama.com/download), puis créer le modèle FlowManage :
 
    ```bash
    cd ia
    ollama pull qwen2.5:3b
-   ollama create floodge -f Modelfile
-   ollama run floodge "Il pleut fort à Abobo, l'eau arrive aux genoux"
+   ollama create flowmanage -f Modelfile
+   ollama run flowmanage "Il pleut fort à Abobo, l'eau arrive aux genoux"
    ```
 
 2. Installer et lancer le service :
@@ -47,7 +47,7 @@ Si Ollama ne répond pas, chaque route bascule sur des **règles de repli** (`ap
 
 ```
 ia/
-├── Modelfile                 modèle "floodge" : base qwen2.5:3b + rôle + règles de sécurité
+├── Modelfile                 modèle "flowmanage" : base qwen2.5:3b + rôle + règles de sécurité
 ├── app/
 │   ├── main.py               routes FastAPI
 │   ├── prompts.py            consignes par tâche (analyse, texte vocal, conseils)

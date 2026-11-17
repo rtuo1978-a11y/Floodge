@@ -64,7 +64,7 @@ def test_texte_vocal_repli(ollama_eteint):
         "/texte-vocal",
         json={"titre": "Inondation à Riviera Palmeraie", "message": "Les routes sont coupées. Évitez le secteur.", "niveau": "DANGER", "commune": "Cocody"},
     ).json()
-    assert r["texte"].startswith("Alerte Floodge à Cocody.")
+    assert r["texte"].startswith("Alerte FlowManage à Cocody.")
     assert "hauteur" in r["texte"]
 
 

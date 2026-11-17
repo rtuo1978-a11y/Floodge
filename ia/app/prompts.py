@@ -18,7 +18,7 @@ Description : « {description} »"""
 
 TEXTE_VOCAL = """Tâche : écrire le texte d'une alerte qui sera LUE À VOIX HAUTE par le téléphone.
 Règles : 2 ou 3 phrases courtes, français simple, sans abréviation, sans emoji, moins de 50 mots.
-Commencer par « Alerte Floodge. ». Dire le lieu, le danger, puis UNE action à faire.
+Commencer par « Alerte FlowManage. ». Dire le lieu, le danger, puis UNE action à faire.
 Ne rien inventer qui ne soit pas dans l'alerte.
 
 Niveau : {niveau}
@@ -29,7 +29,7 @@ Message : {message}"""
 CONSEILS = """Tâche : donner des conseils de sécurité adaptés à la situation décrite par un habitant.
 Réponds uniquement en JSON : {{"conseils": ["...", "..."]}} avec 3 à 5 conseils concrets,
 une phrase chacun, du plus urgent au moins urgent. Si une vie est en danger, le premier conseil
-est d'appeler les sapeurs-pompiers au 180 ou d'utiliser le bouton SOS de Floodge.
+est d'appeler les sapeurs-pompiers au 180 ou d'utiliser le bouton SOS de FlowManage.
 
 Commune : {commune}
 Niveau de risque de la zone : {niveau_risque}

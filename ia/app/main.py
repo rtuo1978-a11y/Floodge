@@ -1,4 +1,4 @@
-"""Service IA de Floodge — appelé uniquement par le back-end.
+"""Service IA de FlowManage — appelé uniquement par le back-end.
 
 Lancer : uvicorn app.main:app --reload --port 8000
 Documentation : http://localhost:8000/docs
@@ -21,10 +21,10 @@ from .schemas import (
     TexteVocal,
 )
 
-log = logging.getLogger("floodge.ia")
+log = logging.getLogger("flowmanage.ia")
 
 app = FastAPI(
-    title="Floodge IA",
+    title="FlowManage IA",
     description="Analyse des signalements, conseils et textes d'alerte vocale (Ollama).",
     version="0.1.0",
 )

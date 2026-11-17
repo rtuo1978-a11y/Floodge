@@ -1,12 +1,12 @@
-"""Fine-tuning (LoRA) du modèle Floodge — à exécuter sur Google Colab (GPU T4 gratuit).
+"""Fine-tuning (LoRA) du modèle FlowManage — à exécuter sur Google Colab (GPU T4 gratuit).
 
 Étapes :
   1. Colab → Exécution → Modifier le type d'exécution → GPU T4
   2. !pip install unsloth
-  3. Envoyer dans Colab : ce script, ../Modelfile et donnees/floodge-instructions.jsonl
+  3. Envoyer dans Colab : ce script, ../Modelfile et donnees/flowmanage-instructions.jsonl
   4. !python finetune_unsloth.py
-  5. Télécharger le fichier floodge-gguf/*.gguf, le placer dans ia/entrainement/
-  6. Sur le PC : ollama create floodge -f entrainement/Modelfile.finetune
+  5. Télécharger le fichier flowmanage-gguf/*.gguf, le placer dans ia/entrainement/
+  6. Sur le PC : ollama create flowmanage -f entrainement/Modelfile.finetune
 
 L'API d'Unsloth évolue vite : en cas d'erreur, comparer avec les notebooks officiels
 « Qwen2.5 conversational » sur https://docs.unsloth.ai
@@ -21,8 +21,8 @@ from unsloth import FastLanguageModel
 from unsloth.chat_templates import get_chat_template
 
 MODELE_BASE = "unsloth/Qwen2.5-3B-Instruct"  # même famille que FROM qwen2.5:3b dans le Modelfile
-DONNEES = "floodge-instructions.jsonl"
-SORTIE = "floodge-gguf"
+DONNEES = "flowmanage-instructions.jsonl"
+SORTIE = "flowmanage-gguf"
 
 # Le même message système que dans le Modelfile, pour que l'entraînement et l'usage concordent
 modelfile = Path("Modelfile").read_text(encoding="utf-8")
@@ -73,4 +73,4 @@ trainer.train()
 
 # Export GGUF quantifié (≈ 2 Go) utilisable par Ollama
 model.save_pretrained_gguf(SORTIE, tokenizer, quantization_method="q4_k_m")
-print(f"✔ Modèle exporté dans {SORTIE}/ — copier le .gguf dans ia/entrainement/ puis : ollama create floodge -f entrainement/Modelfile.finetune")
+print(f"✔ Modèle exporté dans {SORTIE}/ — copier le .gguf dans ia/entrainement/ puis : ollama create flowmanage -f entrainement/Modelfile.finetune")

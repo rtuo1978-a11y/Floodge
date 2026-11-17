@@ -80,15 +80,15 @@ def texte_vocal(titre: str, message: str, niveau: str, commune: str | None) -> s
     action = {
         "DANGER": "Mettez-vous immédiatement en hauteur et évitez de vous déplacer.",
         "VIGILANCE": "Évitez les bas-fonds et ne traversez pas les rues inondées.",
-        "INFO": "Restez informés sur l'application Floodge.",
+        "INFO": "Restez informés sur l'application FlowManage.",
     }.get(niveau, "Restez prudents.")
     lieu = f" à {commune}" if commune else ""
     premiere_phrase = message.strip().split(".")[0]
-    return f"Alerte Floodge{lieu}. {titre}. {premiere_phrase}. {action}"
+    return f"Alerte FlowManage{lieu}. {titre}. {premiere_phrase}. {action}"
 
 
 CONSEILS_URGENCE = [
-    "Si une vie est en danger, appelez les sapeurs-pompiers au 180 ou utilisez le bouton SOS de Floodge.",
+    "Si une vie est en danger, appelez les sapeurs-pompiers au 180 ou utilisez le bouton SOS de FlowManage.",
     "Montez à l'étage ou rejoignez un endroit en hauteur, loin des bas-fonds.",
     "Coupez l'électricité si vous pouvez le faire sans toucher l'eau.",
     "Ne traversez pas une rue inondée, ni à pied ni en voiture : 30 cm d'eau suffisent à emporter un véhicule.",
@@ -96,7 +96,7 @@ CONSEILS_URGENCE = [
 CONSEILS_PREVENTION = [
     "Préparez un sac avec de l'eau, une lampe, des médicaments et vos papiers dans une pochette étanche.",
     "Ne jetez pas d'ordures dans les caniveaux : bouchés, ils font monter l'eau dans le quartier.",
-    "Suivez les bulletins de la SODEXAM et les alertes Floodge pendant la saison des pluies.",
+    "Suivez les bulletins de la SODEXAM et les alertes FlowManage pendant la saison des pluies.",
     "Repérez à l'avance un lieu en hauteur où vous réfugier avec votre famille.",
 ]
 
