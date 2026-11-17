@@ -1,0 +1,35 @@
+{
+  "name": "floodge-cartographie",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Floodge — service cartographie et données : zones à risque, SODEXAM, score de risque, itinéraires sûrs",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "zones:generer": "tsx scripts/generer-zones-demo.ts",
+    "zones:envoyer": "tsx scripts/envoyer-zones.ts",
+    "sodexam:importer": "tsx scripts/importer-sodexam.ts",
+    "risque:recalculer": "tsx scripts/recalculer-risque.ts"
+  },
+  "dependencies": {
+    "@turf/turf": "^7.4.0",
+    "csv-parse": "^7.0.3",
+    "dotenv": "^18.0.10",
+    "express": "^5.3.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.6",
+    "@types/supertest": "^7.2.1",
+    "supertest": "^7.3.2",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0"
+  }
+}

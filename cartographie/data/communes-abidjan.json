@@ -1,0 +1,18 @@
+{
+  "_note": "Centres approximatifs des communes du District d'Abidjan (démonstration). Remplacer par les limites officielles quand elles seront disponibles.",
+  "communes": [
+    { "nom": "Abobo", "latitude": 5.4320, "longitude": -4.0180 },
+    { "nom": "Adjamé", "latitude": 5.3670, "longitude": -4.0210 },
+    { "nom": "Anyama", "latitude": 5.4940, "longitude": -4.0520 },
+    { "nom": "Attécoubé", "latitude": 5.3350, "longitude": -4.0460 },
+    { "nom": "Bingerville", "latitude": 5.3550, "longitude": -3.8850 },
+    { "nom": "Cocody", "latitude": 5.3600, "longitude": -3.9670 },
+    { "nom": "Koumassi", "latitude": 5.2970, "longitude": -3.9470 },
+    { "nom": "Marcory", "latitude": 5.3030, "longitude": -3.9830 },
+    { "nom": "Plateau", "latitude": 5.3220, "longitude": -4.0180 },
+    { "nom": "Port-Bouët", "latitude": 5.2550, "longitude": -3.9240 },
+    { "nom": "Songon", "latitude": 5.3150, "longitude": -4.2650 },
+    { "nom": "Treichville", "latitude": 5.2920, "longitude": -4.0060 },
+    { "nom": "Yopougon", "latitude": 5.3400, "longitude": -4.0800 }
+  ]
+}

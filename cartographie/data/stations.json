@@ -1,0 +1,10 @@
+{
+  "_note": "Stations météo. ABJ-AEROPORT correspond à la station synoptique de l'aéroport d'Abidjan (SODEXAM) ; les stations DEMO-* sont fictives, pour tester le calcul de risque par quartier.",
+  "stations": [
+    { "code": "ABJ-AEROPORT", "nom": "Abidjan Aéroport (SODEXAM)", "commune": "Port-Bouët", "latitude": 5.2614, "longitude": -3.9263, "estDemo": false },
+    { "code": "DEMO-COCODY", "nom": "Station démo Cocody", "commune": "Cocody", "latitude": 5.3720, "longitude": -3.9700, "estDemo": true },
+    { "code": "DEMO-YOPOUGON", "nom": "Station démo Yopougon", "commune": "Yopougon", "latitude": 5.3380, "longitude": -4.0850, "estDemo": true },
+    { "code": "DEMO-ABOBO", "nom": "Station démo Abobo", "commune": "Abobo", "latitude": 5.4250, "longitude": -4.0200, "estDemo": true },
+    { "code": "DEMO-PLATEAU", "nom": "Station démo Plateau", "commune": "Plateau", "latitude": 5.3230, "longitude": -4.0190, "estDemo": true }
+  ]
+}
