@@ -1,7 +1,7 @@
 import { config } from './config.js';
 import type { NiveauRisque, Observation, PointInonde } from './types.js';
 
-/** Appels aux routes /interne du back-end Floodge (en-tête x-api-key). */
+/** Appels aux routes /interne du back-end FlowManage (en-tête x-api-key). */
 async function appel<T>(chemin: string, init?: { method?: string; body?: unknown }): Promise<T> {
   const res = await fetch(`${config.backendUrl}${chemin}`, {
     method: init?.method ?? 'GET',

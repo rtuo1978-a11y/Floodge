@@ -9,7 +9,7 @@ const stations = chargerStations();
 const app = creerApp(store, stations);
 
 app.listen(config.port, () => {
-  console.log(`Floodge cartographie : http://localhost:${config.port} (${store.toutes().features.length} zones)`);
+  console.log(`FlowManage cartographie : http://localhost:${config.port} (${store.toutes().features.length} zones)`);
   if (!config.googleMapsKey) console.warn('⚠ GOOGLE_MAPS_API_KEY absente : itinéraires sûrs désactivés');
 });
 

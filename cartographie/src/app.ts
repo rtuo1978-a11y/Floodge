@@ -39,7 +39,7 @@ export function creerApp(store: ZonesStore, stations: Station[]) {
   app.use(express.text({ type: ['text/csv', 'text/plain'], limit: '5mb' }));
 
   app.get('/sante', (_req, res) => {
-    res.json({ statut: 'ok', service: 'floodge-cartographie', zones: store.toutes().features.length, googleMaps: !!config.googleMapsKey });
+    res.json({ statut: 'ok', service: 'flowmanage-cartographie', zones: store.toutes().features.length, googleMaps: !!config.googleMapsKey });
   });
 
   // ---------- Zones ----------

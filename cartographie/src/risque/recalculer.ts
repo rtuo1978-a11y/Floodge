@@ -69,7 +69,7 @@ export async function recalculerEtPublier(store: ZonesStore, stations: Station[]
   let envoyes = 0;
   for (const r of resultats) {
     try {
-      await backend.majRisque(r.code, { niveau: r.niveau, score: r.score, source: 'calcul Floodge (pluie + signalements)' });
+      await backend.majRisque(r.code, { niveau: r.niveau, score: r.score, source: 'calcul FlowManage (pluie + signalements)' });
       envoyes++;
     } catch {
       /* back-end indisponible : le résultat reste disponible dans ce service */

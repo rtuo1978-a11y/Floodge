@@ -1,8 +1,8 @@
 {
-  "name": "floodge-cartographie",
+  "name": "flowmanage-cartographie",
   "version": "0.1.0",
   "private": true,
-  "description": "Floodge — service cartographie et données : zones à risque, SODEXAM, score de risque, itinéraires sûrs",
+  "description": "FlowManage — service cartographie et données : zones à risque, SODEXAM, score de risque, itinéraires sûrs",
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",

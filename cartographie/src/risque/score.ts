@@ -1,7 +1,7 @@
 import type { NiveauRisque } from '../types.js';
 
 /**
- * Score de risque d'inondation d'une zone (0 → 100) — niveau 2 de « l'intelligence » de Floodge.
+ * Score de risque d'inondation d'une zone (0 → 100) — niveau 2 de « l'intelligence » de FlowManage.
  *
  * Par temps sec, le score vaut le risque de base de la zone (relief, bas-fonds, historique).
  * Il monte vers 100 avec :

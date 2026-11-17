@@ -1,6 +1,6 @@
-# Floodge — Cartographie et données
+# FlowManage — Cartographie et données
 
-Service Node.js qui gère la **géographie** de Floodge :
+Service Node.js qui gère la **géographie** de FlowManage :
 
 - **Zones à risque** (GeoJSON) et localisation d'un point (zone + commune)
 - **Import des données SODEXAM** (pluie, niveau d'eau) depuis un fichier CSV
