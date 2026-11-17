@@ -1,14 +1,39 @@
 import { useFocusEffect, useRouter } from 'expo-router';
+import {
+  Award,
+  ChevronRight,
+  Eye,
+  HandHeart,
+  LifeBuoy,
+  LogOut,
+  Medal,
+  Megaphone,
+  ShieldCheck,
+  Trophy,
+  type LucideIcon,
+} from 'lucide-react-native';
 import { useCallback, useState } from 'react';
-import { Text, View } from 'react-native';
-import { Bouton, Carte, Ecran, Pastille, SousTitre, styles, Vide } from '../../components/ui';
+import { StyleSheet, View } from 'react-native';
+import { Avatar, Bouton, Carte, Ecran, EnTeteSection, EtatVide, LigneListe, PastilleNiveau, styles as ui, Texte } from '../../components/ui';
 import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
-import { ilYa, NIVEAUX_INONDATION, STATUTS_SIGNALEMENT } from '../../lib/format';
+import { ilYa, NIVEAUX_INONDATION, rang, STATUTS_SIGNALEMENT } from '../../lib/format';
 import type { Classement, Signalement } from '../../lib/types';
-import { couleurs, espace, police } from '../../theme';
+import { couleurs, espace, ombre, rayon } from '../../theme';
 
-const ICONES: Record<string, string> = { SENTINELLE: '👁️', VIGIE_QUARTIER: '🛡️', SOLIDAIRE: '🤝', MEILLEUR_CITOYEN: '🏅' };
+const BADGES: Record<string, { icone: LucideIcon; couleur: string; fond: string }> = {
+  SENTINELLE: { icone: Eye, couleur: couleurs.primaire, fond: couleurs.primaireDoux },
+  VIGIE_QUARTIER: { icone: ShieldCheck, couleur: couleurs.succes, fond: couleurs.succesDoux },
+  SOLIDAIRE: { icone: HandHeart, couleur: couleurs.modere, fond: couleurs.modereDoux },
+  MEILLEUR_CITOYEN: { icone: Trophy, couleur: couleurs.or, fond: couleurs.orDoux },
+};
+
+const ROLES: Record<string, string> = {
+  CITOYEN: 'Citoyen',
+  SECOURISTE: 'Secouriste',
+  AUTORITE: 'Autorité',
+  ADMIN: 'Administrateur',
+};
 
 export default function ProfilEcran() {
   const router = useRouter();
@@ -42,79 +67,184 @@ export default function ProfilEcran() {
 
   return (
     <Ecran titre="Mon profil" onRafraichir={charger} rafraichissement={chargement}>
-      <Carte>
-        <Text style={[styles.texte, { fontSize: police.titre, fontWeight: '700' }]}>{utilisateur.nom}</Text>
-        <Text style={styles.texteSecondaire}>
-          {[utilisateur.commune, utilisateur.email].filter(Boolean).join(' · ')}
-        </Text>
-        <View style={[styles.ligne, { marginTop: espace.m }]}>
-          <Text style={{ fontSize: police.grande, fontWeight: '800', color: couleurs.primaire }}>{utilisateur.points}</Text>
-          <Text style={styles.texte}>points citoyens{monRang ? ` · ${monRang === 1 ? '1er' : `${monRang}e`} ce mois-ci` : ''}</Text>
+      {/* Carte d'identité + statistiques */}
+      <View style={[styles.identite, ombre.moyenne]}>
+        <View style={ui.ligne}>
+          <Avatar nom={utilisateur.nom} taille={60} />
+          <View style={{ flex: 1 }}>
+            <Texte variante="titre2" couleur={couleurs.surFonce}>
+              {utilisateur.nom}
+            </Texte>
+            <Texte variante="petit" couleur={couleurs.primaireDoux}>
+              {[ROLES[role], utilisateur.commune].filter(Boolean).join(' · ')}
+            </Texte>
+          </View>
         </View>
-      </Carte>
+        <View style={styles.stats}>
+          {[
+            { valeur: String(utilisateur.points), libelle: 'points' },
+            { valeur: monRang ? rang(monRang) : '—', libelle: 'ce mois-ci' },
+            { valeur: String(mesSignalements.length), libelle: 'signalements' },
+          ].map((s) => (
+            <View key={s.libelle} style={styles.stat}>
+              <Texte variante="titre1" couleur={couleurs.surFonce}>
+                {s.valeur}
+              </Texte>
+              <Texte variante="petit" couleur={couleurs.primaireDoux}>
+                {s.libelle}
+              </Texte>
+            </View>
+          ))}
+        </View>
+      </View>
 
       {role !== 'CITOYEN' ? (
         <>
-          <SousTitre>Mon espace</SousTitre>
-          {role === 'AUTORITE' || role === 'ADMIN' ? (
-            <Bouton libelle="Espace autorités : vérifier et publier" onPress={() => router.push('/autorite')} />
-          ) : null}
-          <Bouton libelle="Espace secours : demandes SOS" variante="secondaire" onPress={() => router.push('/secours')} />
+          <EnTeteSection titre="Mon espace" />
+          <Carte style={{ padding: 0 }}>
+            {role === 'AUTORITE' || role === 'ADMIN' ? (
+              <>
+                <LigneListe
+                  icone={Megaphone}
+                  titre="Espace autorités"
+                  sousTitre="Publier les alertes, vérifier les signalements"
+                  onPress={() => router.push('/autorite')}
+                  droite={<ChevronRight size={20} color={couleurs.texteSecondaire} />}
+                />
+                <View style={ui.separateur} />
+              </>
+            ) : null}
+            <LigneListe
+              icone={LifeBuoy}
+              titre="Espace secours"
+              sousTitre="Demandes SOS en cours"
+              couleurIcone={couleurs.sos}
+              fondIcone={couleurs.sosDoux}
+              onPress={() => router.push('/secours')}
+              droite={<ChevronRight size={20} color={couleurs.texteSecondaire} />}
+            />
+          </Carte>
         </>
       ) : null}
 
-      <SousTitre>Mes badges</SousTitre>
+      <EnTeteSection titre="Mes badges" />
       {utilisateur.badges?.length ? (
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: espace.s }}>
-          {utilisateur.badges.map((b) => (
-            <Carte key={b.id} style={{ width: '48%', alignItems: 'center' }}>
-              <Text style={{ fontSize: 32 }}>{ICONES[b.badge.code] ?? '⭐'}</Text>
-              <Text style={[styles.texte, { fontWeight: '700', textAlign: 'center' }]}>{b.badge.nom}</Text>
-              <Text style={[styles.texteSecondaire, { textAlign: 'center' }]}>{b.periode || b.badge.description}</Text>
-            </Carte>
-          ))}
+        <View style={styles.grille}>
+          {utilisateur.badges.map((b) => {
+            const st = BADGES[b.badge.code] ?? { icone: Award, couleur: couleurs.primaire, fond: couleurs.primaireDoux };
+            return (
+              <View key={b.id} style={styles.badge} accessible accessibilityLabel={`Badge ${b.badge.nom}`}>
+                <View style={[styles.iconeBadge, { backgroundColor: st.fond }]}>
+                  <st.icone size={26} color={st.couleur} strokeWidth={2.2} />
+                </View>
+                <Texte variante="petitGras" style={{ textAlign: 'center' }}>
+                  {b.badge.nom}
+                </Texte>
+                <Texte variante="legende" couleur={couleurs.texteSecondaire} style={{ textAlign: 'center' }}>
+                  {b.periode || b.badge.description}
+                </Texte>
+              </View>
+            );
+          })}
         </View>
       ) : (
-        <Vide texte="Envoyez votre premier signalement pour obtenir le badge Sentinelle." />
-      )}
-
-      <SousTitre>Classement du mois — Meilleur citoyen</SousTitre>
-      {classement?.classement.length ? (
         <Carte>
-          {classement.classement.slice(0, 10).map((c) => (
-            <View key={c.userId} style={[styles.ligne, { paddingVertical: espace.xs }]}>
-              <Text style={[styles.texte, { width: 30, fontWeight: '700' }]}>{c.rang === 1 ? '🏅' : `${c.rang}.`}</Text>
-              <Text style={[styles.texte, { flex: 1, fontWeight: c.userId === utilisateur.id ? '700' : '400' }]}>
-                {c.nom}
-                {c.commune ? ` (${c.commune})` : ''}
-              </Text>
-              <Text style={styles.texte}>{c.score} pts</Text>
-            </View>
-          ))}
+          <EtatVide icone={Award} titre="Pas encore de badge" texte="Envoyez votre premier signalement pour devenir Sentinelle." />
         </Carte>
-      ) : (
-        <Vide texte="Pas encore de classement ce mois-ci." />
       )}
 
-      <SousTitre>Mes signalements</SousTitre>
+      <EnTeteSection titre="Meilleur citoyen du mois" />
+      <Carte style={{ padding: 0 }}>
+        {classement?.classement.length ? (
+          classement.classement.slice(0, 10).map((c, i) => {
+            const moi = c.userId === utilisateur.id;
+            const podium = [couleurs.or, couleurs.argent, couleurs.bronze][c.rang - 1];
+            return (
+              <View key={c.userId}>
+                {i > 0 ? <View style={[ui.separateur, { marginLeft: espace.m }]} /> : null}
+                <View style={[styles.rangLigne, moi ? { backgroundColor: couleurs.primaireTresDoux } : null]}>
+                  <View style={styles.rang}>
+                    {podium ? (
+                      <Medal size={22} color={podium} />
+                    ) : (
+                      <Texte variante="petitGras" couleur={couleurs.texteSecondaire}>
+                        {c.rang}
+                      </Texte>
+                    )}
+                  </View>
+                  <Avatar nom={c.nom} taille={36} />
+                  <View style={{ flex: 1 }}>
+                    <Texte variante={moi ? 'corpsGras' : 'corps'} numberOfLines={1}>
+                      {c.nom}
+                      {moi ? ' (vous)' : ''}
+                    </Texte>
+                    {c.commune ? (
+                      <Texte variante="petit" couleur={couleurs.texteSecondaire}>
+                        {c.commune}
+                      </Texte>
+                    ) : null}
+                  </View>
+                  <Texte variante="corpsGras" couleur={couleurs.primaire}>
+                    {c.score} pts
+                  </Texte>
+                </View>
+              </View>
+            );
+          })
+        ) : (
+          <EtatVide icone={Trophy} titre="Classement vide" texte="Soyez le premier à signaler ce mois-ci." />
+        )}
+      </Carte>
+
+      <EnTeteSection titre="Mes signalements" />
       {mesSignalements.length ? (
         mesSignalements.slice(0, 10).map((s) => (
-          <Carte key={s.id} onPress={() => router.push(`/signalement/${s.id}`)}>
-            <View style={[styles.ligne, { justifyContent: 'space-between' }]}>
-              <Pastille libelle={NIVEAUX_INONDATION[s.niveau].libelle} couleur={NIVEAUX_INONDATION[s.niveau].couleur} />
-              <Text style={styles.texteSecondaire}>{ilYa(s.createdAt)}</Text>
+          <Carte key={s.id} onPress={() => router.push(`/signalement/${s.id}`)} accent={NIVEAUX_INONDATION[s.niveau].couleur}>
+            <View style={ui.entre}>
+              <PastilleNiveau s={STATUTS_SIGNALEMENT[s.statut]} />
+              <Texte variante="petit" couleur={couleurs.texteSecondaire}>
+                {ilYa(s.createdAt)}
+              </Texte>
             </View>
-            <Text style={[styles.texte, { marginTop: espace.s }]} numberOfLines={2}>
+            <Texte variante="corps" style={{ marginTop: espace.s }} numberOfLines={2}>
               {s.description}
-            </Text>
-            <Text style={styles.texteSecondaire}>{STATUTS_SIGNALEMENT[s.statut]}</Text>
+            </Texte>
           </Carte>
         ))
       ) : (
-        <Vide texte="Aucun signalement pour le moment." />
+        <Carte>
+          <EtatVide icone={Eye} titre="Aucun signalement" texte="Vos signalements apparaîtront ici." />
+        </Carte>
       )}
 
-      <Bouton libelle="Se déconnecter" variante="discret" onPress={deconnecter} style={{ marginTop: espace.l }} />
+      <Bouton libelle="Se déconnecter" icone={LogOut} variante="fantome" onPress={deconnecter} style={{ marginTop: espace.l }} />
     </Ecran>
   );
 }
+
+const styles = StyleSheet.create({
+  identite: { backgroundColor: couleurs.primaire, borderRadius: rayon.xl, padding: espace.m },
+  stats: {
+    flexDirection: 'row',
+    marginTop: espace.m,
+    backgroundColor: couleurs.voileClair,
+    borderRadius: rayon.l,
+    paddingVertical: espace.sm,
+  },
+  stat: { flex: 1, alignItems: 'center' },
+  grille: { flexDirection: 'row', flexWrap: 'wrap', gap: espace.sm },
+  badge: {
+    width: '48%',
+    flexGrow: 1,
+    backgroundColor: couleurs.surface,
+    borderRadius: rayon.l,
+    borderWidth: 1,
+    borderColor: couleurs.bordure,
+    padding: espace.m,
+    alignItems: 'center',
+    gap: espace.xs,
+  },
+  iconeBadge: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginBottom: espace.xs },
+  rangLigne: { flexDirection: 'row', alignItems: 'center', gap: espace.sm, paddingHorizontal: espace.m, paddingVertical: espace.sm },
+  rang: { width: 28, alignItems: 'center' },
+});

@@ -1,7 +1,8 @@
 import { useFocusEffect } from 'expo-router';
+import { CircleCheck, Clock, LifeBuoy, Navigation, Phone, Users } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
-import { Linking, Platform, Text, View } from 'react-native';
-import { Bouton, Carte, Ecran, Message, Pastille, styles, Vide } from '../components/ui';
+import { Linking, Platform, View } from 'react-native';
+import { Bandeau, Bouton, Carte, Ecran, EtatVide, PastilleNiveau, Squelette, styles as ui, Texte } from '../components/ui';
 import { api } from '../lib/api';
 import { ilYa, STATUTS_SECOURS } from '../lib/format';
 import type { DemandeSecours, StatutSecours } from '../lib/types';
@@ -9,9 +10,10 @@ import { couleurs, espace } from '../theme';
 
 /** Espace secours : demandes SOS en cours, prise en charge, guidage. */
 export default function SecoursEcran() {
-  const [demandes, setDemandes] = useState<DemandeSecours[]>([]);
+  const [demandes, setDemandes] = useState<DemandeSecours[] | null>(null);
   const [chargement, setChargement] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
+  const [enCours, setEnCours] = useState<string | null>(null);
 
   const charger = useCallback(async () => {
     setChargement(true);
@@ -34,11 +36,14 @@ export default function SecoursEcran() {
   );
 
   async function changer(d: DemandeSecours, statut: StatutSecours) {
+    setEnCours(d.id);
     try {
       await api.majSecours(d.id, statut);
       await charger();
     } catch (e) {
       setErreur((e as Error).message);
+    } finally {
+      setEnCours(null);
     }
   }
 
@@ -49,44 +54,74 @@ export default function SecoursEcran() {
         : `https://www.google.com/maps/dir/?api=1&destination=${d.latitude},${d.longitude}`,
     );
 
+  const enAttente = demandes?.filter((d) => d.statut === 'EN_ATTENTE').length ?? 0;
+
   return (
-    <Ecran onRafraichir={charger} rafraichissement={chargement}>
-      {erreur ? <Message type="erreur" texte={erreur} /> : null}
-      {!demandes.length && !chargement ? <Vide texte="Aucune demande de secours en cours." /> : null}
+    <Ecran enTeteSysteme onRafraichir={charger} rafraichissement={chargement && !!demandes}>
+      {erreur ? <Bandeau type="erreur" texte={erreur} /> : null}
+      {demandes?.length ? (
+        <Bandeau
+          type={enAttente ? 'erreur' : 'info'}
+          icone={LifeBuoy}
+          titre={enAttente ? `${enAttente} demande(s) sans équipe` : 'Toutes les demandes sont prises en charge'}
+          texte="Mise à jour automatique toutes les 30 secondes."
+        />
+      ) : null}
+      {!demandes && !erreur ? (
+        <>
+          <Squelette hauteur={200} />
+          <Squelette hauteur={200} />
+        </>
+      ) : null}
+      {demandes && !demandes.length ? (
+        <EtatVide icone={LifeBuoy} titre="Aucune demande en cours" texte="Les nouvelles demandes SOS apparaîtront ici et sur vos notifications." />
+      ) : null}
 
-      {demandes.map((d) => (
-        <Carte key={d.id} style={{ borderLeftWidth: 5, borderLeftColor: d.statut === 'EN_ATTENTE' ? couleurs.sos : couleurs.modere }}>
-          <View style={[styles.ligne, { justifyContent: 'space-between' }]}>
-            <Pastille
-              libelle={STATUTS_SECOURS[d.statut]}
-              couleur={d.statut === 'EN_ATTENTE' ? couleurs.sos : couleurs.modere}
-            />
-            <Text style={styles.texteSecondaire}>{ilYa(d.createdAt)}</Text>
-          </View>
-          <Text style={[styles.texte, { fontWeight: '700', marginTop: espace.s }]}>
-            {d.nbPersonnes} personne(s) — {d.demandeur?.nom ?? 'Citoyen'}
-          </Text>
-          {d.description ? <Text style={styles.texte}>{d.description}</Text> : null}
-          {d.secouriste ? <Text style={styles.texteSecondaire}>Pris en charge par {d.secouriste.nom}</Text> : null}
-
-          <View style={[styles.ligne, { marginTop: espace.s, flexWrap: 'wrap' }]}>
-            <Bouton libelle="🧭 Y aller" variante="secondaire" onPress={() => itineraire(d)} style={{ flex: 1 }} />
-            {d.telephone || d.demandeur?.telephone ? (
-              <Bouton
-                libelle="📞 Appeler"
-                variante="secondaire"
-                onPress={() => Linking.openURL(`tel:${d.telephone ?? d.demandeur?.telephone}`)}
-                style={{ flex: 1 }}
-              />
+      {demandes?.map((d) => {
+        const st = STATUTS_SECOURS[d.statut];
+        const tel = d.telephone ?? d.demandeur?.telephone;
+        return (
+          <Carte key={d.id} accent={st.couleur}>
+            <View style={ui.entre}>
+              <PastilleNiveau s={st} />
+              <View style={ui.ligne}>
+                <Clock size={14} color={couleurs.texteSecondaire} />
+                <Texte variante="petit" couleur={couleurs.texteSecondaire}>
+                  {ilYa(d.createdAt)}
+                </Texte>
+              </View>
+            </View>
+            <View style={[ui.ligne, { marginTop: espace.sm }]}>
+              <Users size={20} color={couleurs.texte} />
+              <Texte variante="titre3">
+                {d.nbPersonnes} personne{d.nbPersonnes > 1 ? 's' : ''} — {d.demandeur?.nom ?? 'Citoyen'}
+              </Texte>
+            </View>
+            {d.description ? (
+              <Texte variante="corps" style={{ marginTop: espace.xs }}>
+                {d.description}
+              </Texte>
             ) : null}
-          </View>
-          {d.statut === 'EN_ATTENTE' ? (
-            <Bouton libelle="Prendre en charge" onPress={() => changer(d, 'PRISE_EN_CHARGE')} />
-          ) : (
-            <Bouton libelle="Intervention terminée" onPress={() => changer(d, 'TERMINEE')} />
-          )}
-        </Carte>
-      ))}
+            {d.secouriste ? (
+              <Texte variante="petit" couleur={couleurs.texteSecondaire} style={{ marginTop: espace.xs }}>
+                Équipe : {d.secouriste.nom}
+              </Texte>
+            ) : null}
+
+            <View style={[ui.ligne, { marginTop: espace.sm }]}>
+              <Bouton libelle="Itinéraire" icone={Navigation} variante="contour" petit onPress={() => itineraire(d)} style={{ flex: 1 }} />
+              {tel ? (
+                <Bouton libelle="Appeler" icone={Phone} variante="contour" petit onPress={() => Linking.openURL(`tel:${tel}`)} style={{ flex: 1 }} />
+              ) : null}
+            </View>
+            {d.statut === 'EN_ATTENTE' ? (
+              <Bouton libelle="Prendre en charge" icone={LifeBuoy} variante="danger" chargement={enCours === d.id} onPress={() => changer(d, 'PRISE_EN_CHARGE')} />
+            ) : (
+              <Bouton libelle="Intervention terminée" icone={CircleCheck} chargement={enCours === d.id} onPress={() => changer(d, 'TERMINEE')} />
+            )}
+          </Carte>
+        );
+      })}
     </Ecran>
   );
 }

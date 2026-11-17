@@ -1,19 +1,31 @@
 import { useFocusEffect, useRouter } from 'expo-router';
+import { LocateFixed, RefreshCw, Route, Siren, TriangleExclamationPoint, X } from 'lucide-react-native';
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import MapView, { Marker, Polygon, Polyline, PROVIDER_GOOGLE, type LatLng } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Logo } from '../../components/Logo';
+import { Bouton, BoutonIcone, PastilleNiveau, Texte } from '../../components/ui';
 import { api } from '../../lib/api';
-import { duree, NIVEAUX_ALERTE, NIVEAUX_INONDATION, NIVEAUX_RISQUE } from '../../lib/format';
+import { distance, duree, ilYa, NIVEAUX_ALERTE, NIVEAUX_INONDATION, NIVEAUX_RISQUE } from '../../lib/format';
 import { ABIDJAN, decoderPolyline, positionActuelle } from '../../lib/position';
-import type { Alerte, Itineraire, Point, Signalement, ZoneFeature } from '../../lib/types';
-import { couleurs, espace, police, rayon } from '../../theme';
+import type { Alerte, Itineraire, NiveauRisque, Point, Signalement, ZoneFeature } from '../../lib/types';
+import { couleurs, espace, ombre, rayon, taille } from '../../theme';
 
 /** Anneaux extérieurs d'une zone GeoJSON → coordonnées react-native-maps */
 function contours(z: ZoneFeature): LatLng[][] {
   const polygones = z.geometry.type === 'Polygon' ? [z.geometry.coordinates] : z.geometry.coordinates;
   return polygones.map((p) => p[0].map(([longitude, latitude]) => ({ latitude, longitude })));
 }
+
+type Selection =
+  | { type: 'zone'; zone: ZoneFeature }
+  | { type: 'signalement'; signalement: Signalement }
+  | { type: 'itineraire'; texte: string; sur: boolean }
+  | { type: 'destination' }
+  | null;
+
+const LEGENDE: NiveauRisque[] = ['FAIBLE', 'MODERE', 'ELEVE', 'TRES_ELEVE'];
 
 export default function CarteEcran() {
   const router = useRouter();
@@ -24,14 +36,15 @@ export default function CarteEcran() {
   const [alertes, setAlertes] = useState<Alerte[]>([]);
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState<string | null>(null);
+  const [selection, setSelection] = useState<Selection>(null);
 
   const [destination, setDestination] = useState<Point | null>(null);
   const [itineraires, setItineraires] = useState<Itineraire[]>([]);
-  const [infoItineraire, setInfoItineraire] = useState<string | null>(null);
   const [calcul, setCalcul] = useState(false);
 
   const charger = useCallback(async () => {
     setErreur(null);
+    setChargement(true);
     try {
       const pos = await positionActuelle();
       setPosition(pos);
@@ -52,31 +65,38 @@ export default function CarteEcran() {
     }, [charger]),
   );
 
+  function recentrer() {
+    const centre = position ?? ABIDJAN;
+    carte.current?.animateToRegion({ ...centre, latitudeDelta: 0.05, longitudeDelta: 0.05 }, 400);
+  }
+
   async function calculerItineraire() {
     if (!destination) return;
     const depart = position ?? (await positionActuelle());
     if (!depart) {
-      setInfoItineraire('Activez la localisation pour calculer un itinéraire.');
+      setSelection({ type: 'itineraire', texte: 'Activez la localisation pour calculer un itinéraire.', sur: false });
       return;
     }
     setCalcul(true);
-    setInfoItineraire(null);
     try {
       const r = await api.itineraireSur(depart, destination);
       setItineraires(r.itineraires);
       const reco = r.recommande;
-      setInfoItineraire(
-        r.avertissement ??
+      setSelection({
+        type: 'itineraire',
+        sur: !!reco?.sur,
+        texte:
+          r.avertissement ??
           (reco
-            ? `Itinéraire sûr : ${(reco.distanceMetres / 1000).toFixed(1)} km, ${duree(reco.dureeSecondes)}`
+            ? `${(reco.distanceMetres / 1000).toFixed(1)} km · ${duree(reco.dureeSecondes)} · aucune rue inondée signalée`
             : 'Aucun itinéraire trouvé.'),
-      );
+      });
       const tous = r.itineraires.flatMap((i) => decoderPolyline(i.polyline));
       if (tous.length) {
-        carte.current?.fitToCoordinates(tous, { edgePadding: { top: 120, bottom: 200, left: 40, right: 40 }, animated: true });
+        carte.current?.fitToCoordinates(tous, { edgePadding: { top: 160, bottom: 280, left: 40, right: 40 }, animated: true });
       }
     } catch (e) {
-      setInfoItineraire((e as Error).message);
+      setSelection({ type: 'itineraire', texte: (e as Error).message, sur: false });
     } finally {
       setCalcul(false);
     }
@@ -85,24 +105,26 @@ export default function CarteEcran() {
   function effacerItineraire() {
     setDestination(null);
     setItineraires([]);
-    setInfoItineraire(null);
+    setSelection(null);
   }
 
   const alerteUrgente = alertes.find((a) => a.niveau === 'DANGER') ?? alertes.find((a) => a.niveau === 'VIGILANCE');
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: couleurs.fond }}>
       <MapView
         ref={carte}
         style={StyleSheet.absoluteFill}
         provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
         initialRegion={{ ...ABIDJAN, latitudeDelta: 0.18, longitudeDelta: 0.18 }}
         showsUserLocation
-        showsMyLocationButton
+        showsMyLocationButton={false}
+        toolbarEnabled={false}
+        onPress={() => !destination && setSelection(null)}
         onLongPress={(e) => {
           setDestination(e.nativeEvent.coordinate);
           setItineraires([]);
-          setInfoItineraire('Destination choisie. Appuyez sur « Itinéraire sûr ».');
+          setSelection({ type: 'destination' });
         }}
       >
         {zones.map((z) =>
@@ -110,37 +132,39 @@ export default function CarteEcran() {
             <Polygon
               key={`${z.properties.code}-${i}`}
               coordinates={coords}
-              fillColor={`${NIVEAUX_RISQUE[z.properties.niveau].couleur}40`}
+              fillColor={`${NIVEAUX_RISQUE[z.properties.niveau].couleur}33`}
               strokeColor={NIVEAUX_RISQUE[z.properties.niveau].couleur}
-              strokeWidth={1.5}
+              strokeWidth={2}
               tappable
-              onPress={() =>
-                setInfoItineraire(
-                  `${z.properties.nom} (${z.properties.commune}) — ${NIVEAUX_RISQUE[z.properties.niveau].libelle}` +
-                    (z.properties.estDemo ? ' · zone de démonstration' : ''),
-                )
-              }
+              onPress={() => setSelection({ type: 'zone', zone: z })}
             />
           )),
         )}
 
-        {signalements.map((s) => (
-          <Marker
-            key={s.id}
-            coordinate={s}
-            pinColor={NIVEAUX_INONDATION[s.niveau].couleur}
-            title={`${NIVEAUX_INONDATION[s.niveau].libelle} — ${s.commune ?? 'Signalement'}`}
-            description={s.description}
-            onCalloutPress={() => router.push(`/signalement/${s.id}`)}
-          />
-        ))}
+        {signalements.map((s) => {
+          const n = NIVEAUX_INONDATION[s.niveau];
+          return (
+            <Marker
+              key={s.id}
+              coordinate={s}
+              pinColor={n.couleur}
+              tracksViewChanges={false}
+              accessibilityLabel={`Signalement ${n.libelle}`}
+              onPress={() => setSelection({ type: 'signalement', signalement: s })}
+            >
+              <View style={[styles.marqueur, { backgroundColor: n.couleur }]}>
+                <n.icone size={16} color={couleurs.surFonce} strokeWidth={2.5} />
+              </View>
+            </Marker>
+          );
+        })}
 
         {itineraires.map((it, i) => (
           <Polyline
             key={i}
             coordinates={decoderPolyline(it.polyline)}
-            strokeWidth={i === 0 ? 6 : 3}
-            strokeColor={i === 0 ? (it.sur ? couleurs.primaire : couleurs.modere) : '#90A4AE'}
+            strokeWidth={i === 0 ? 6 : 4}
+            strokeColor={i === 0 ? (it.sur ? couleurs.primaire : couleurs.modere) : couleurs.bordureForte}
             zIndex={i === 0 ? 2 : 1}
           />
         ))}
@@ -148,93 +172,280 @@ export default function CarteEcran() {
         {destination ? <Marker coordinate={destination} title="Destination" pinColor={couleurs.primaire} /> : null}
       </MapView>
 
+      {/* ---------- Haut : en-tête flottant, alerte, légende ---------- */}
       <SafeAreaView edges={['top']} style={styles.haut} pointerEvents="box-none">
+        <View style={[styles.barre, ombre.moyenne]}>
+          <Logo taille={36} />
+          <View style={{ flex: 1 }}>
+            <Texte variante="titre3">Floodge</Texte>
+            <Texte variante="petit" couleur={couleurs.texteSecondaire} numberOfLines={1}>
+              {chargement ? 'Mise à jour…' : `${signalements.length} signalement(s) · ${zones.length} zones suivies`}
+            </Texte>
+          </View>
+          {chargement ? (
+            <ActivityIndicator color={couleurs.primaire} style={{ width: taille.cible }} />
+          ) : (
+            <BoutonIcone icone={RefreshCw} libelle="Actualiser la carte" onPress={charger} variante="transparent" />
+          )}
+        </View>
+
         {alerteUrgente ? (
           <Pressable
             onPress={() => router.push('/alertes')}
-            style={[styles.bandeau, { backgroundColor: NIVEAUX_ALERTE[alerteUrgente.niveau].couleur }]}
+            accessibilityRole="button"
+            accessibilityLabel={`Alerte ${NIVEAUX_ALERTE[alerteUrgente.niveau].libelle} : ${alerteUrgente.titre}. Voir les alertes`}
+            style={({ pressed }) => [
+              styles.alerte,
+              { backgroundColor: NIVEAUX_ALERTE[alerteUrgente.niveau].couleur, opacity: pressed ? 0.9 : 1 },
+              ombre.moyenne,
+            ]}
           >
-            <Text style={styles.texteBandeau} numberOfLines={2}>
-              ⚠️ {alerteUrgente.titre}
-              {alerteUrgente.distanceKm != null ? ` · à ${alerteUrgente.distanceKm} km` : ''}
-            </Text>
+            <TriangleExclamationPoint size={22} color={couleurs.surFonce} strokeWidth={2.4} />
+            <View style={{ flex: 1 }}>
+              <Texte variante="corpsGras" couleur={couleurs.surFonce} numberOfLines={1}>
+                {alerteUrgente.titre}
+              </Texte>
+              <Texte variante="petit" couleur={couleurs.surFonce} numberOfLines={1}>
+                {[
+                  NIVEAUX_ALERTE[alerteUrgente.niveau].libelle,
+                  distance(alerteUrgente.distanceKm),
+                  alerteUrgente.publieeLe ? ilYa(alerteUrgente.publieeLe) : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </Texte>
+            </View>
           </Pressable>
         ) : null}
+
         {erreur ? (
-          <Pressable onPress={charger} style={[styles.bandeau, { backgroundColor: couleurs.erreur }]}>
-            <Text style={styles.texteBandeau}>{erreur} — toucher pour réessayer</Text>
+          <Pressable onPress={charger} style={[styles.alerte, { backgroundColor: couleurs.erreur }]} accessibilityRole="button">
+            <Texte variante="petitGras" couleur={couleurs.surFonce}>
+              {erreur} — toucher pour réessayer
+            </Texte>
           </Pressable>
         ) : null}
-        {chargement ? <ActivityIndicator style={{ marginTop: espace.s }} color={couleurs.primaire} /> : null}
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.legende}
+          accessibilityLabel="Légende des niveaux de risque"
+        >
+          {LEGENDE.map((n) => (
+            <View key={n} style={[styles.puce, ombre.faible]}>
+              <View style={[styles.pointLegende, { backgroundColor: NIVEAUX_RISQUE[n].couleur }]} />
+              <Texte variante="legende" couleur={couleurs.texte}>
+                {NIVEAUX_RISQUE[n].libelle.replace('Risque ', '')}
+              </Texte>
+            </View>
+          ))}
+        </ScrollView>
       </SafeAreaView>
 
+      {/* ---------- Bas : boutons flottants + panneau contextuel ---------- */}
       <View style={styles.bas} pointerEvents="box-none">
-        {infoItineraire ? (
-          <View style={styles.info}>
-            <Text style={{ color: couleurs.texte, fontSize: police.normale }}>{infoItineraire}</Text>
-          </View>
-        ) : (
-          <View style={styles.info}>
-            <Text style={{ color: couleurs.texteSecondaire, fontSize: police.petite }}>
-              Appui long sur la carte : choisir une destination et calculer un itinéraire qui évite les rues inondées.
-            </Text>
-          </View>
-        )}
-        <View style={styles.actions}>
-          {destination ? (
-            <>
-              <Pressable style={[styles.action, { backgroundColor: couleurs.primaire }]} onPress={calculerItineraire}>
-                {calcul ? <ActivityIndicator color="#fff" /> : <Text style={styles.texteAction}>Itinéraire sûr</Text>}
-              </Pressable>
-              <Pressable style={[styles.action, { backgroundColor: couleurs.texteSecondaire }]} onPress={effacerItineraire}>
-                <Text style={styles.texteAction}>Effacer</Text>
-              </Pressable>
-            </>
-          ) : (
-            <Pressable style={[styles.action, { backgroundColor: couleurs.surface }]} onPress={charger}>
-              <Text style={[styles.texteAction, { color: couleurs.primaire }]}>Actualiser</Text>
-            </Pressable>
-          )}
-          <Pressable style={[styles.action, styles.sos]} onPress={() => router.push('/sos')}>
-            <Text style={styles.texteAction}>SOS</Text>
+        <View style={styles.flottants} pointerEvents="box-none">
+          <BoutonIcone icone={LocateFixed} libelle="Centrer sur ma position" onPress={recentrer} />
+          <Pressable
+            onPress={() => router.push('/sos')}
+            accessibilityRole="button"
+            accessibilityLabel="SOS : demander du secours"
+            style={({ pressed }) => [styles.sos, { backgroundColor: pressed ? couleurs.sosPresse : couleurs.sos }, ombre.forte]}
+          >
+            <Siren size={22} color={couleurs.surFonce} strokeWidth={2.4} />
+            <Texte variante="legende" couleur={couleurs.surFonce}>
+              SOS
+            </Texte>
           </Pressable>
+        </View>
+
+        <View style={[styles.panneau, ombre.forte]}>
+          <View style={styles.poignee} />
+          <Panneau
+            selection={selection}
+            destination={destination}
+            calcul={calcul}
+            onCalculer={calculerItineraire}
+            onEffacer={effacerItineraire}
+            onOuvrirSignalement={(id) => router.push(`/signalement/${id}`)}
+            onFermer={() => setSelection(null)}
+          />
         </View>
       </View>
     </View>
   );
 }
 
+function Panneau({
+  selection,
+  destination,
+  calcul,
+  onCalculer,
+  onEffacer,
+  onOuvrirSignalement,
+  onFermer,
+}: {
+  selection: Selection;
+  destination: Point | null;
+  calcul: boolean;
+  onCalculer: () => void;
+  onEffacer: () => void;
+  onOuvrirSignalement: (id: string) => void;
+  onFermer: () => void;
+}) {
+  if (selection?.type === 'zone') {
+    const p = selection.zone.properties;
+    return (
+      <>
+        <View style={styles.entreHaut}>
+          <View style={{ flex: 1 }}>
+            <Texte variante="titre3">{p.nom}</Texte>
+            <Texte variante="petit" couleur={couleurs.texteSecondaire}>
+              {p.commune}
+              {p.estDemo ? ' · zone de démonstration' : ''}
+            </Texte>
+          </View>
+          <BoutonIcone icone={X} libelle="Fermer" onPress={onFermer} variante="transparent" />
+        </View>
+        <View style={styles.ligne}>
+          <PastilleNiveau s={NIVEAUX_RISQUE[p.niveau]} />
+          <Texte variante="petit" couleur={couleurs.texteSecondaire}>
+            Indice {Math.round(p.score)}/100
+          </Texte>
+        </View>
+      </>
+    );
+  }
+
+  if (selection?.type === 'signalement') {
+    const s = selection.signalement;
+    return (
+      <>
+        <View style={styles.entreHaut}>
+          <View style={{ flex: 1, gap: espace.xs }}>
+            <PastilleNiveau s={NIVEAUX_INONDATION[s.niveau]} />
+            <Texte variante="corps" numberOfLines={2}>
+              {s.description}
+            </Texte>
+            <Texte variante="petit" couleur={couleurs.texteSecondaire}>
+              {[s.commune, ilYa(s.createdAt), `${s._count.confirmations} confirmation(s)`].filter(Boolean).join(' · ')}
+            </Texte>
+          </View>
+          <BoutonIcone icone={X} libelle="Fermer" onPress={onFermer} variante="transparent" />
+        </View>
+        <Bouton libelle="Voir le détail" variante="secondaire" petit onPress={() => onOuvrirSignalement(s.id)} />
+      </>
+    );
+  }
+
+  if (destination) {
+    const alerte = selection?.type === 'itineraire' && !selection.sur;
+    return (
+      <>
+        <Texte variante="titre3">Itinéraire sûr</Texte>
+        <Texte variante="petit" couleur={alerte ? couleurs.modere : couleurs.texteSecondaire}>
+          {selection?.type === 'itineraire'
+            ? selection.texte
+            : 'Destination choisie. Calculez un trajet qui évite les rues signalées inondées.'}
+        </Texte>
+        <View style={styles.ligne}>
+          <Bouton libelle="Calculer" icone={Route} onPress={onCalculer} chargement={calcul} style={{ flex: 1 }} petit />
+          <Bouton libelle="Effacer" variante="contour" onPress={onEffacer} style={{ flex: 1 }} petit />
+        </View>
+      </>
+    );
+  }
+
+  return (
+    <View style={styles.ligne}>
+      <View style={styles.iconeAide}>
+        <Route size={20} color={couleurs.primaire} />
+      </View>
+      <Texte variante="petit" couleur={couleurs.texteSecondaire} style={{ flex: 1 }}>
+        Touchez une zone ou un signalement pour le détail. Appui long sur la carte : itinéraire qui évite les rues inondées.
+      </Texte>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  haut: { position: 'absolute', top: 0, left: 0, right: 0, paddingHorizontal: espace.m },
-  bandeau: { borderRadius: rayon.m, padding: espace.m, marginTop: espace.s },
-  texteBandeau: { color: '#fff', fontWeight: '700', fontSize: police.normale },
-  bas: { position: 'absolute', bottom: espace.m, left: espace.m, right: espace.m },
-  info: {
+  haut: { position: 'absolute', top: 0, left: 0, right: 0, paddingHorizontal: espace.m, gap: espace.s },
+  barre: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espace.sm,
     backgroundColor: couleurs.surface,
-    borderRadius: rayon.m,
-    padding: espace.m,
-    marginBottom: espace.s,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
+    borderRadius: rayon.l,
+    paddingLeft: espace.sm,
+    paddingRight: espace.xs,
+    paddingVertical: espace.s,
+    marginTop: espace.s,
   },
-  actions: { flexDirection: 'row', gap: espace.s },
-  action: {
-    flexGrow: 1,
-    flexShrink: 1,
-    flexBasis: 0,
-    height: 52,
-    borderRadius: rayon.m,
+  alerte: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espace.sm,
+    borderRadius: rayon.l,
+    paddingHorizontal: espace.m,
+    paddingVertical: espace.sm,
+    minHeight: taille.cible,
+  },
+  legende: { gap: espace.s, paddingVertical: espace.xs },
+  puce: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espace.xs,
+    backgroundColor: couleurs.surface,
+    borderRadius: rayon.rond,
+    paddingHorizontal: espace.sm,
+    paddingVertical: espace.xs + 2,
+  },
+  pointLegende: { width: 10, height: 10, borderRadius: 5 },
+  marqueur: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
+    borderWidth: 2.5,
+    borderColor: couleurs.surface,
   },
-  sos: { backgroundColor: couleurs.sos, flexGrow: 0, flexShrink: 0, flexBasis: 84 },
-  texteAction: { color: '#fff', fontWeight: '700', fontSize: police.moyenne },
+  bas: { position: 'absolute', left: 0, right: 0, bottom: 0 },
+  flottants: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    paddingHorizontal: espace.m,
+    marginBottom: espace.sm,
+  },
+  sos: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 4,
+    borderColor: couleurs.surface,
+  },
+  panneau: {
+    backgroundColor: couleurs.surface,
+    borderTopLeftRadius: rayon.xl,
+    borderTopRightRadius: rayon.xl,
+    paddingHorizontal: espace.m,
+    paddingTop: espace.s,
+    paddingBottom: espace.m,
+    gap: espace.s,
+  },
+  poignee: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: couleurs.bordureForte, marginBottom: espace.xs },
+  entreHaut: { flexDirection: 'row', alignItems: 'flex-start', gap: espace.s },
+  ligne: { flexDirection: 'row', alignItems: 'center', gap: espace.s },
+  iconeAide: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: couleurs.primaireDoux,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

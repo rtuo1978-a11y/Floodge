@@ -1,9 +1,12 @@
 # Floodge — Application mobile
 
 Application des habitants, des autorités et des secours.
-**React Native · Expo SDK 58 · Expo Router · react-native-maps (Google Maps)**
+**React Native · Expo SDK 58 · Expo Router · react-native-maps (Google Maps) · Lucide**
 
-> Les écrans sont **fonctionnels mais sobres** : l'équipe UI/UX remplacera le style à partir des maquettes Figma. Toutes les couleurs et tailles sont dans `src/theme.ts`, les composants de base dans `src/components/ui.tsx`.
+> **Design system** : style « accessible et rassurant » (bleu de l'eau, rouge réservé au danger et au SOS, icônes Lucide, polices Lexend + Atkinson Hyperlegible, contrastes WCAG AA vérifiés).
+> - Jetons : `src/theme.ts` — composants : `src/components/ui.tsx`
+> - Documentation : [`design/design-system.md`](design/design-system.md) et spécifications écran par écran : [`design/handoff.md`](design/handoff.md)
+> - Règle d'équipe : aucune couleur, taille ou espacement « en dur » dans les écrans.
 
 ## Écrans
 
@@ -74,7 +77,8 @@ npm run typecheck
 
 ## À faire (suite du projet)
 
-- [ ] Intégrer les maquettes Figma (thème, icônes, écrans)
+- [ ] Reporter les jetons du design system dans une bibliothèque Figma
+- [ ] Mode sombre (jetons prêts, palette sombre à définir)
 - [ ] Mode hors connexion : enregistrer le signalement et l'envoyer au retour du réseau
 - [ ] Rédaction d'une alerte depuis l'espace autorités (aujourd'hui : publication des propositions, création via l'API)
 - [ ] Choix de la destination par recherche d'adresse pour l'itinéraire sûr

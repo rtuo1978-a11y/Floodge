@@ -1,18 +1,40 @@
-import { useEffect, useState } from 'react';
-import { Linking, Pressable, Text, View } from 'react-native';
-import { Bouton, Carte, Champ, Ecran, Message, SousTitre, styles } from '../components/ui';
+import { Ambulance, Hourglass, Phone, ShieldCheck, Siren } from 'lucide-react-native';
+import { useEffect, useRef, useState } from 'react';
+import { AccessibilityInfo, Animated, Linking, Pressable, StyleSheet, View } from 'react-native';
+import { Bandeau, Bouton, Carte, Champ, Ecran, EnTeteSection, Texte } from '../components/ui';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
-import { ilYa, STATUTS_SECOURS } from '../lib/format';
+import { ilYa } from '../lib/format';
 import { positionActuelle } from '../lib/position';
 import type { DemandeSecours } from '../lib/types';
-import { couleurs, espace, police } from '../theme';
+import { couleurs, espace, ombre, rayon, taille } from '../theme';
 
 const NUMEROS = [
   { libelle: 'Sapeurs-pompiers', numero: '180' },
   { libelle: 'SAMU', numero: '185' },
-  { libelle: 'Police secours', numero: '110' },
+  { libelle: 'Police', numero: '110' },
 ];
+
+/** Halo autour du bouton SOS (désactivé si « réduire les animations » est activé). */
+function Halo() {
+  const echelle = useRef(new Animated.Value(1)).current;
+  const [reduit, setReduit] = useState(true);
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduit).catch(() => setReduit(false));
+  }, []);
+  useEffect(() => {
+    if (reduit) return;
+    const a = Animated.loop(
+      Animated.sequence([
+        Animated.timing(echelle, { toValue: 1.12, duration: 900, useNativeDriver: true }),
+        Animated.timing(echelle, { toValue: 1, duration: 900, useNativeDriver: true }),
+      ]),
+    );
+    a.start();
+    return () => a.stop();
+  }, [echelle, reduit]);
+  return <Animated.View style={[styles.halo, { transform: [{ scale: echelle }] }]} />;
+}
 
 export default function SosEcran() {
   const { utilisateur } = useAuth();
@@ -51,79 +73,150 @@ export default function SosEcran() {
   const enCours = demandes.find((d) => d.statut === 'EN_ATTENTE' || d.statut === 'PRISE_EN_CHARGE');
 
   return (
-    <Ecran>
-      {erreur ? <Message type="erreur" texte={erreur} /> : null}
+    <Ecran enTeteSysteme>
+      {erreur ? <Bandeau type="erreur" texte={erreur} /> : null}
 
       {enCours ? (
-        <Carte style={{ borderColor: couleurs.sos, borderWidth: 2 }}>
-          <Text style={[styles.texte, { fontWeight: '700', fontSize: police.moyenne }]}>
-            {enCours.statut === 'PRISE_EN_CHARGE' ? '🚑 Les secours arrivent' : '⏳ Demande envoyée'}
-          </Text>
-          <Text style={styles.texte}>
-            {STATUTS_SECOURS[enCours.statut]} · {ilYa(enCours.createdAt)}
-            {enCours.secouriste ? ` · ${enCours.secouriste.nom}` : ''}
-          </Text>
-          <Text style={[styles.texte, { marginTop: espace.s }]}>
-            Restez en hauteur, gardez votre téléphone allumé et joignable.
-          </Text>
+        <View style={[styles.suivi, ombre.moyenne]} accessibilityLiveRegion="polite">
+          <View style={styles.iconeSuivi}>
+            {enCours.statut === 'PRISE_EN_CHARGE' ? (
+              <Ambulance size={32} color={couleurs.surFonce} />
+            ) : (
+              <Hourglass size={32} color={couleurs.surFonce} />
+            )}
+          </View>
+          <Texte variante="titre2" couleur={couleurs.surFonce} style={{ textAlign: 'center' }}>
+            {enCours.statut === 'PRISE_EN_CHARGE' ? 'Les secours arrivent' : 'Demande envoyée'}
+          </Texte>
+          <Texte variante="petit" couleur={couleurs.surFonce} style={{ textAlign: 'center', opacity: 0.9 }}>
+            {ilYa(enCours.createdAt)}
+            {enCours.secouriste ? ` · pris en charge par ${enCours.secouriste.nom}` : ' · en attente d’une équipe'}
+          </Texte>
+          <View style={styles.consigne}>
+            <ShieldCheck size={20} color={couleurs.sos} />
+            <Texte variante="petit" style={{ flex: 1 }}>
+              Restez en hauteur, gardez votre téléphone allumé et faites-vous voir (lampe, tissu de couleur).
+            </Texte>
+          </View>
           {enCours.statut === 'EN_ATTENTE' ? (
             <Bouton
-              libelle="Annuler la demande"
-              variante="discret"
+              libelle="Annuler ma demande"
+              variante="contour"
+              petit
               onPress={async () => {
                 await api.majSecours(enCours.id, 'ANNULEE').catch((e: Error) => setErreur(e.message));
                 await charger();
               }}
             />
           ) : null}
-        </Carte>
+        </View>
       ) : (
         <>
-          <Text style={[styles.texte, { marginBottom: espace.m }]}>
-            Votre position sera envoyée aux équipes de secours. N'utilisez ce bouton que si des personnes sont en danger.
-          </Text>
-          <Champ libelle="Nombre de personnes" value={nbPersonnes} onChangeText={setNbPersonnes} keyboardType="number-pad" />
-          <Champ
-            libelle="Situation (facultatif)"
-            value={description}
-            onChangeText={setDescription}
-            placeholder="Ex. : bloqués au 1er étage, une personne âgée"
-          />
-          <Champ libelle="Téléphone pour vous joindre" value={telephone} onChangeText={setTelephone} keyboardType="phone-pad" />
-          <Pressable
-            onPress={envoyer}
-            disabled={envoi}
-            accessibilityRole="button"
-            style={({ pressed }) => ({
-              backgroundColor: couleurs.sos,
-              borderRadius: 100,
-              width: 180,
-              height: 180,
-              alignSelf: 'center',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginVertical: espace.l,
-              opacity: pressed || envoi ? 0.8 : 1,
-            })}
-          >
-            <Text style={{ color: '#fff', fontSize: 40, fontWeight: '900' }}>{envoi ? '…' : 'SOS'}</Text>
-            <Text style={{ color: '#fff' }}>Demander du secours</Text>
-          </Pressable>
+          <Texte variante="corps" couleur={couleurs.texteSecondaire} style={{ textAlign: 'center', marginBottom: espace.m }}>
+            Votre position sera envoyée aux équipes de secours. À utiliser uniquement si des personnes sont en danger.
+          </Texte>
+
+          <View style={styles.zoneBouton}>
+            <Halo />
+            <Pressable
+              onPress={envoyer}
+              disabled={envoi}
+              accessibilityRole="button"
+              accessibilityLabel="Envoyer une demande de secours avec ma position"
+              accessibilityState={{ busy: envoi }}
+              style={({ pressed }) => [styles.boutonSos, { backgroundColor: pressed || envoi ? couleurs.sosPresse : couleurs.sos }, ombre.forte]}
+            >
+              <Siren size={40} color={couleurs.surFonce} strokeWidth={2.2} />
+              <Texte variante="affiche" couleur={couleurs.surFonce}>
+                {envoi ? '…' : 'SOS'}
+              </Texte>
+              <Texte variante="legende" couleur={couleurs.surFonce} style={{ textAlign: 'center' }}>
+                TOUCHER POUR ENVOYER
+              </Texte>
+            </Pressable>
+          </View>
+
+          <Carte>
+            <Texte variante="titre3" style={{ marginBottom: espace.sm }}>
+              Aidez les secours (facultatif)
+            </Texte>
+            <Champ libelle="Nombre de personnes" value={nbPersonnes} onChangeText={setNbPersonnes} keyboardType="number-pad" />
+            <Champ libelle="Situation" value={description} onChangeText={setDescription} placeholder="Ex. : bloqués au 1er étage, une personne âgée" />
+            <Champ libelle="Téléphone pour vous joindre" value={telephone} onChangeText={setTelephone} keyboardType="phone-pad" />
+          </Carte>
         </>
       )}
 
-      <SousTitre>Numéros d'urgence</SousTitre>
-      <View style={styles.ligne}>
+      <EnTeteSection titre="Numéros d'urgence" />
+      <View style={styles.numeros}>
         {NUMEROS.map((n) => (
-          <Bouton
+          <Pressable
             key={n.numero}
-            libelle={`${n.numero}\n${n.libelle}`}
-            variante="secondaire"
             onPress={() => Linking.openURL(`tel:${n.numero}`)}
-            style={{ flex: 1, paddingVertical: espace.s }}
-          />
+            accessibilityRole="button"
+            accessibilityLabel={`Appeler ${n.libelle}, ${n.numero}`}
+            style={({ pressed }) => [styles.numero, { backgroundColor: pressed ? couleurs.surfaceAlt : couleurs.surface }]}
+          >
+            <Phone size={18} color={couleurs.sos} />
+            <Texte variante="titre2">{n.numero}</Texte>
+            <Texte variante="legende" couleur={couleurs.texteSecondaire} style={{ textAlign: 'center' }}>
+              {n.libelle}
+            </Texte>
+          </Pressable>
         ))}
       </View>
     </Ecran>
   );
 }
+
+const styles = StyleSheet.create({
+  zoneBouton: { alignItems: 'center', justifyContent: 'center', height: taille.sos + 56, marginBottom: espace.m },
+  halo: {
+    position: 'absolute',
+    width: taille.sos + 40,
+    height: taille.sos + 40,
+    borderRadius: (taille.sos + 40) / 2,
+    backgroundColor: couleurs.sosDoux,
+  },
+  boutonSos: {
+    width: taille.sos,
+    height: taille.sos,
+    borderRadius: taille.sos / 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 6,
+    borderColor: couleurs.surface,
+    paddingHorizontal: espace.m,
+  },
+  suivi: { backgroundColor: couleurs.sos, borderRadius: rayon.xl, padding: espace.l, alignItems: 'center', gap: espace.s },
+  iconeSuivi: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: couleurs.voileClairFort,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  consigne: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espace.s,
+    backgroundColor: couleurs.surface,
+    borderRadius: rayon.m,
+    padding: espace.sm,
+    marginTop: espace.s,
+    alignSelf: 'stretch',
+  },
+  numeros: { flexDirection: 'row', gap: espace.s },
+  numero: {
+    flex: 1,
+    minHeight: 96,
+    borderRadius: rayon.l,
+    borderWidth: 1,
+    borderColor: couleurs.bordure,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: espace.xxs,
+    padding: espace.s,
+  },
+});

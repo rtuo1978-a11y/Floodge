@@ -14,7 +14,7 @@ const MapView = forwardRef(function MapView({ initialRegion, style, children, on
   });
   const fond = {
     position: 'absolute', inset: 0, overflow: 'hidden',
-    background: 'linear-gradient(160deg,#eef3e8 0%,#e6eedf 45%,#d6e6f2 70%,#c9def0 100%)',
+    background: 'linear-gradient(170deg,#F3F6EE 0%,#EDF2E8 50%,#E3EEF5 68%,#D3E6F3 100%)',
   };
   return React.createElement('div', {
     style: fond,
@@ -34,19 +34,27 @@ const MapView = forwardRef(function MapView({ initialRegion, style, children, on
 });
 export default MapView;
 
-export function Polygon({ coordinates, fillColor, strokeColor, strokeWidth = 1 }) {
+export function Polygon({ coordinates, fillColor, strokeColor, strokeWidth = 1, onPress }) {
   const proj = useContext(Ctx);
   const pts = coordinates.map((c) => { const p = proj(c.latitude, c.longitude); return `${p.x},${p.y}`; }).join(' ');
-  return React.createElement('polygon', { points: pts, fill: fillColor, stroke: strokeColor, strokeWidth });
+  return React.createElement('polygon', { points: pts, fill: fillColor, stroke: strokeColor, strokeWidth, onClick: onPress, style: { cursor: onPress ? 'pointer' : 'default' } });
 }
 export function Polyline({ coordinates, strokeColor, strokeWidth = 3 }) {
   const proj = useContext(Ctx);
   const pts = coordinates.map((c) => { const p = proj(c.latitude, c.longitude); return `${p.x},${p.y}`; }).join(' ');
   return React.createElement('polyline', { points: pts, fill: 'none', stroke: strokeColor, strokeWidth });
 }
-export function Marker({ coordinate, pinColor = '#d32f2f', title }) {
+export function Marker({ coordinate, pinColor = '#B91C1C', title, children }) {
   const proj = useContext(Ctx);
   const { x, y } = proj(coordinate.latitude, coordinate.longitude);
+  // Marqueur personnalisé (enfant) → pastille ronde ; sinon épingle classique
+  if (children) {
+    return React.createElement('g', { transform: `translate(${x},${y})` },
+      React.createElement('title', null, title),
+      React.createElement('circle', { r: 15, fill: pinColor, stroke: '#fff', strokeWidth: 3 }),
+      React.createElement('path', { d: 'M-6 2 c 2 -2 4 -2 6 0 s 4 2 6 0', stroke: '#fff', strokeWidth: 2.2, fill: 'none', strokeLinecap: 'round' }),
+      React.createElement('path', { d: 'M-6 -4 c 2 -2 4 -2 6 0 s 4 2 6 0', stroke: '#fff', strokeWidth: 2.2, fill: 'none', strokeLinecap: 'round' }));
+  }
   return React.createElement('g', { transform: `translate(${x},${y})` },
     React.createElement('title', null, title),
     React.createElement('path', { d: 'M0 0 C -9 -12, -9 -24, 0 -26 C 9 -24, 9 -12, 0 0 Z', fill: pinColor, stroke: '#fff', strokeWidth: 1.5 }),

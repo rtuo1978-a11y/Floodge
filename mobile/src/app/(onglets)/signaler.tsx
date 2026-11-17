@@ -1,14 +1,37 @@
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Image, Pressable, Text, TextInput, View } from 'react-native';
-import { Bouton, Ecran, Message, SousTitre, styles } from '../../components/ui';
+import { Camera, CircleCheck, ImagePlus, MapPin, RefreshCw, Send, Siren, X } from 'lucide-react-native';
+import { useEffect, useState, type ReactNode } from 'react';
+import { ActivityIndicator, Image, Pressable, StyleSheet, View } from 'react-native';
+import { Bandeau, Bouton, BoutonIcone, Champ, Ecran, Texte } from '../../components/ui';
 import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { NIVEAUX_INONDATION } from '../../lib/format';
 import { positionActuelle } from '../../lib/position';
 import type { NiveauInondation, Point } from '../../lib/types';
-import { couleurs, espace, police, rayon } from '../../theme';
+import { couleurs, espace, rayon } from '../../theme';
+
+function Etape({ numero, titre, children, fait }: { numero: number; titre: string; children: ReactNode; fait: boolean }) {
+  return (
+    <View style={{ marginBottom: espace.l }}>
+      <View style={[styles.ligne, { marginBottom: espace.sm }]}>
+        <View style={[styles.numero, fait ? { backgroundColor: couleurs.succes } : null]}>
+          {fait ? (
+            <CircleCheck size={16} color={couleurs.surFonce} strokeWidth={2.6} />
+          ) : (
+            <Texte variante="petitGras" couleur={couleurs.surPrimaire}>
+              {numero}
+            </Texte>
+          )}
+        </View>
+        <Texte variante="titre3" accessibilityRole="header">
+          {titre}
+        </Texte>
+      </View>
+      {children}
+    </View>
+  );
+}
 
 export default function SignalerEcran() {
   const router = useRouter();
@@ -49,11 +72,11 @@ export default function SignalerEcran() {
     setErreur(null);
     try {
       const photoUrl = photo ? (await api.envoyerPhoto(photo.uri, photo.mimeType ?? 'image/jpeg')).url : undefined;
-      const s = await api.signaler({ ...position, niveau, description: description.trim(), photoUrl });
+      await api.signaler({ ...position, niveau, description: description.trim(), photoUrl });
       setSucces(
-        s.analyseIa?.besoinSecours || niveau === 'ELEVE'
+        niveau === 'ELEVE'
           ? 'Signalement envoyé. Si des personnes sont en danger, utilisez aussi le bouton SOS.'
-          : 'Merci ! Votre signalement est visible sur la carte et sera vérifié.',
+          : 'Merci ! Votre signalement est visible sur la carte et sera vérifié. +5 points citoyens.',
       );
       setNiveau(null);
       setDescription('');
@@ -66,82 +89,153 @@ export default function SignalerEcran() {
     }
   }
 
+  const descriptionOk = description.trim().length >= 5;
+
   return (
-    <Ecran titre="Signaler une inondation">
-      {succes ? <Message type="succes" texte={succes} /> : null}
-      {erreur ? <Message type="erreur" texte={erreur} /> : null}
+    <Ecran titre="Signaler une inondation" sousTitre="Votre signalement aide les secours et prévient vos voisins.">
+      {succes ? <Bandeau type="succes" icone={CircleCheck} texte={succes} /> : null}
+      {erreur ? <Bandeau type="erreur" texte={erreur} /> : null}
 
-      <SousTitre>Localisation</SousTitre>
-      <View style={[styles.carte, styles.ligne, { justifyContent: 'space-between' }]}>
-        <Text style={[styles.texte, { flex: 1 }]}>
-          {localisation === 'recherche'
-            ? 'Recherche de votre position…'
-            : position
-              ? `📍 ${position.latitude.toFixed(5)}, ${position.longitude.toFixed(5)}`
-              : 'Position indisponible : autorisez la localisation.'}
-        </Text>
-        <Pressable onPress={localiser}>
-          <Text style={{ color: couleurs.primaire, fontWeight: '600' }}>Actualiser</Text>
-        </Pressable>
-      </View>
-
-      <SousTitre>Niveau d'inondation</SousTitre>
-      {(Object.keys(NIVEAUX_INONDATION) as NiveauInondation[]).map((n) => {
-        const actif = niveau === n;
-        const { libelle, aide, couleur } = NIVEAUX_INONDATION[n];
-        return (
-          <Pressable
-            key={n}
-            onPress={() => setNiveau(n)}
-            accessibilityRole="radio"
-            accessibilityState={{ selected: actif }}
-            style={{
-              borderWidth: 2,
-              borderColor: actif ? couleur : couleurs.bordure,
-              backgroundColor: actif ? `${couleur}1A` : couleurs.surface,
-              borderRadius: rayon.m,
-              padding: espace.m,
-              marginBottom: espace.s,
-            }}
-          >
-            <Text style={{ fontSize: police.moyenne, fontWeight: '700', color: couleur }}>{libelle}</Text>
-            <Text style={styles.texteSecondaire}>{aide}</Text>
-          </Pressable>
-        );
-      })}
-
-      <SousTitre>Description</SousTitre>
-      <TextInput
-        style={[styles.champ, { minHeight: 90, textAlignVertical: 'top' }]}
-        multiline
-        maxLength={1000}
-        value={description}
-        onChangeText={setDescription}
-        placeholder="Ex. : La route est recouverte d'eau et les véhicules ne peuvent plus passer."
-        placeholderTextColor={couleurs.texteSecondaire}
-      />
-
-      <SousTitre>Photo (facultatif)</SousTitre>
-      {photo ? (
-        <View>
-          <Image source={{ uri: photo.uri }} style={{ width: '100%', height: 200, borderRadius: rayon.m }} />
-          <Bouton libelle="Retirer la photo" variante="discret" onPress={() => setPhoto(null)} />
+      <Etape numero={1} titre="Où êtes-vous ?" fait={!!position}>
+        <View style={styles.carteLieu}>
+          <View style={styles.iconeLieu}>
+            {localisation === 'recherche' ? <ActivityIndicator color={couleurs.primaire} /> : <MapPin size={20} color={couleurs.primaire} />}
+          </View>
+          <View style={{ flex: 1 }}>
+            <Texte variante="corpsGras">
+              {localisation === 'recherche' ? 'Recherche de votre position…' : position ? 'Position trouvée' : 'Position indisponible'}
+            </Texte>
+            <Texte variante="petit" couleur={couleurs.texteSecondaire}>
+              {position
+                ? `${position.latitude.toFixed(5)}, ${position.longitude.toFixed(5)}`
+                : localisation === 'refusee'
+                  ? 'Autorisez la localisation dans les réglages'
+                  : 'GPS en cours'}
+            </Texte>
+          </View>
+          <BoutonIcone icone={RefreshCw} libelle="Actualiser la position" onPress={localiser} variante="transparent" />
         </View>
-      ) : (
-        <View style={styles.ligne}>
-          <Bouton libelle="📷 Prendre" variante="secondaire" onPress={() => prendrePhoto('camera')} style={{ flex: 1 }} />
-          <Bouton libelle="🖼️ Galerie" variante="secondaire" onPress={() => prendrePhoto('galerie')} style={{ flex: 1 }} />
+      </Etape>
+
+      <Etape numero={2} titre="Quel niveau d'eau ?" fait={!!niveau}>
+        <View style={{ gap: espace.s }} accessibilityRole="radiogroup">
+          {(Object.keys(NIVEAUX_INONDATION) as NiveauInondation[]).map((n) => {
+            const actif = niveau === n;
+            const s = NIVEAUX_INONDATION[n];
+            return (
+              <Pressable
+                key={n}
+                onPress={() => setNiveau(n)}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: actif }}
+                accessibilityLabel={`${s.libelle} : ${s.aide}`}
+                style={({ pressed }) => [
+                  styles.choix,
+                  {
+                    borderColor: actif ? s.couleur : couleurs.bordure,
+                    backgroundColor: actif ? s.doux : pressed ? couleurs.surfaceAlt : couleurs.surface,
+                  },
+                ]}
+              >
+                <View style={[styles.iconeChoix, { backgroundColor: actif ? s.couleur : s.doux }]}>
+                  <s.icone size={22} color={actif ? couleurs.surFonce : s.couleur} strokeWidth={2.2} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Texte variante="corpsGras" couleur={s.couleur}>
+                    {s.libelle}
+                  </Texte>
+                  <Texte variante="petit" couleur={couleurs.texteSecondaire}>
+                    {s.aide}
+                  </Texte>
+                </View>
+                <View style={[styles.radio, { borderColor: actif ? s.couleur : couleurs.bordureForte }]}>
+                  {actif ? <View style={[styles.radioPlein, { backgroundColor: s.couleur }]} /> : null}
+                </View>
+              </Pressable>
+            );
+          })}
         </View>
-      )}
+      </Etape>
+
+      <Etape numero={3} titre="Que voyez-vous ?" fait={descriptionOk}>
+        <Champ
+          libelle="Description"
+          multiline
+          maxLength={1000}
+          value={description}
+          onChangeText={setDescription}
+          placeholder="Ex. : la route est recouverte d'eau, les voitures ne passent plus."
+          aide={`${description.length}/1000 — précisez un repère (carrefour, école, marché…)`}
+        />
+      </Etape>
+
+      <Etape numero={4} titre="Ajouter une photo (facultatif)" fait={!!photo}>
+        {photo ? (
+          <View>
+            <Image source={{ uri: photo.uri }} style={styles.photo} accessibilityLabel="Photo jointe au signalement" />
+            <BoutonIcone icone={X} libelle="Retirer la photo" onPress={() => setPhoto(null)} style={styles.retirer} />
+          </View>
+        ) : (
+          <View style={styles.ligne}>
+            <Bouton libelle="Prendre" icone={Camera} variante="contour" onPress={() => prendrePhoto('camera')} style={{ flex: 1 }} />
+            <Bouton libelle="Galerie" icone={ImagePlus} variante="contour" onPress={() => prendrePhoto('galerie')} style={{ flex: 1 }} />
+          </View>
+        )}
+      </Etape>
 
       <Bouton
         libelle="Envoyer le signalement"
+        icone={Send}
         onPress={envoyer}
         chargement={envoi}
-        desactive={!position || !niveau || description.trim().length < 5}
-        style={{ marginTop: espace.l }}
+        desactive={!position || !niveau || !descriptionOk}
       />
-      <Bouton libelle="Des personnes sont en danger ? SOS" variante="danger" onPress={() => router.push('/sos')} />
+      <Bouton libelle="Des personnes en danger ? SOS" icone={Siren} variante="fantome" onPress={() => router.push('/sos')} />
     </Ecran>
   );
 }
+
+const styles = StyleSheet.create({
+  ligne: { flexDirection: 'row', alignItems: 'center', gap: espace.s },
+  numero: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: couleurs.primaire,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  carteLieu: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espace.sm,
+    backgroundColor: couleurs.surface,
+    borderRadius: rayon.l,
+    borderWidth: 1,
+    borderColor: couleurs.bordure,
+    paddingLeft: espace.m,
+    paddingVertical: espace.s,
+  },
+  iconeLieu: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: couleurs.primaireDoux,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  choix: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espace.sm,
+    borderWidth: 2,
+    borderRadius: rayon.l,
+    padding: espace.sm,
+    minHeight: 72,
+  },
+  iconeChoix: { width: 44, height: 44, borderRadius: rayon.m, alignItems: 'center', justifyContent: 'center' },
+  radio: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  radioPlein: { width: 12, height: 12, borderRadius: 6 },
+  photo: { width: '100%', height: 200, borderRadius: rayon.l },
+  retirer: { position: 'absolute', top: espace.s, right: espace.s },
+});

@@ -1,19 +1,20 @@
 import { useFocusEffect } from 'expo-router';
+import { BellOff, Clock, MapPin, Pause, Volume2 } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Text, View } from 'react-native';
-import { Bouton, Carte, Ecran, Message, Pastille, styles, Vide } from '../../components/ui';
+import { View } from 'react-native';
+import { Bandeau, Bouton, Carte, Ecran, EtatVide, PastilleNiveau, Squelette, styles, Texte } from '../../components/ui';
 import { api } from '../../lib/api';
-import { ilYa, NIVEAUX_ALERTE } from '../../lib/format';
+import { distance, ilYa, NIVEAUX_ALERTE } from '../../lib/format';
 import { positionActuelle } from '../../lib/position';
 import type { Alerte } from '../../lib/types';
 import { arreterLecture, lire, texteAlerte } from '../../lib/voix';
-import { espace } from '../../theme';
+import { couleurs, espace } from '../../theme';
 
 /** Fréquence de vérification des nouvelles alertes quand l'écran est ouvert (en plus des notifications push). */
 const INTERVALLE_MS = 60_000;
 
 export default function AlertesEcran() {
-  const [alertes, setAlertes] = useState<Alerte[]>([]);
+  const [alertes, setAlertes] = useState<Alerte[] | null>(null);
   const [chargement, setChargement] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const [enLecture, setEnLecture] = useState<string | null>(null);
@@ -60,30 +61,71 @@ export default function AlertesEcran() {
     }
   }
 
-  return (
-    <Ecran titre="Alertes" onRafraichir={charger} rafraichissement={chargement}>
-      {erreur ? <Message type="erreur" texte={erreur} /> : null}
-      {!chargement && !alertes.length && !erreur ? <Vide texte="Aucune alerte en cours. Restez vigilants pendant la saison des pluies." /> : null}
+  const nbDanger = alertes?.filter((a) => a.niveau === 'DANGER').length ?? 0;
 
-      {alertes.map((a) => (
-        <Carte key={a.id} style={{ borderLeftWidth: 5, borderLeftColor: NIVEAUX_ALERTE[a.niveau].couleur }}>
-          <View style={[styles.ligne, { justifyContent: 'space-between', marginBottom: espace.s }]}>
-            <Pastille libelle={NIVEAUX_ALERTE[a.niveau].libelle} couleur={NIVEAUX_ALERTE[a.niveau].couleur} />
-            <Text style={styles.texteSecondaire}>{a.publieeLe ? ilYa(a.publieeLe) : ''}</Text>
-          </View>
-          <Text style={[styles.texte, { fontWeight: '700', fontSize: 17 }]}>{a.titre}</Text>
-          <Text style={[styles.texte, { marginVertical: espace.s }]}>{a.message}</Text>
-          <Text style={styles.texteSecondaire}>
-            {[a.zone?.nom, a.commune, a.distanceKm != null ? `à ${a.distanceKm} km de vous` : null].filter(Boolean).join(' · ')}
-          </Text>
-          <Bouton
-            variante="secondaire"
-            libelle={enLecture === a.id ? '⏹ Arrêter' : '🔊 Écouter l’alerte'}
-            onPress={() => basculerLecture(a)}
-            style={{ marginTop: espace.s }}
-          />
-        </Carte>
-      ))}
+  return (
+    <Ecran
+      titre="Alertes"
+      sousTitre={
+        alertes ? (alertes.length ? `${alertes.length} en cours${nbDanger ? ` · ${nbDanger} danger` : ''}` : 'Aucune alerte en cours') : 'Chargement…'
+      }
+      onRafraichir={charger}
+      rafraichissement={chargement && !!alertes}
+    >
+      {erreur ? <Bandeau type="erreur" texte={erreur} /> : null}
+      {!alertes && !erreur ? (
+        <>
+          <Squelette hauteur={180} />
+          <Squelette hauteur={150} />
+        </>
+      ) : null}
+      {alertes && !alertes.length ? (
+        <EtatVide
+          icone={BellOff}
+          titre="Tout est calme"
+          texte="Aucune alerte en cours près de vous. Vous serez prévenu immédiatement, même téléphone verrouillé."
+        />
+      ) : null}
+
+      {alertes?.map((a) => {
+        const n = NIVEAUX_ALERTE[a.niveau];
+        const lecture = enLecture === a.id;
+        return (
+          <Carte key={a.id} accent={n.couleur} style={{ paddingLeft: espace.m }}>
+            <View style={styles.entre}>
+              <PastilleNiveau s={n} />
+              <View style={styles.ligne}>
+                <Clock size={14} color={couleurs.texteSecondaire} />
+                <Texte variante="petit" couleur={couleurs.texteSecondaire}>
+                  {a.publieeLe ? ilYa(a.publieeLe) : ''}
+                </Texte>
+              </View>
+            </View>
+            <Texte variante="titre3" style={{ marginTop: espace.sm }}>
+              {a.titre}
+            </Texte>
+            <Texte variante="corps" style={{ marginTop: espace.xs }}>
+              {a.message}
+            </Texte>
+            {a.zone || a.commune || a.distanceKm != null ? (
+              <View style={[styles.ligne, { marginTop: espace.sm }]}>
+                <MapPin size={16} color={couleurs.texteSecondaire} />
+                <Texte variante="petit" couleur={couleurs.texteSecondaire} style={{ flex: 1 }}>
+                  {[a.zone?.nom, a.commune, distance(a.distanceKm)].filter(Boolean).join(' · ')}
+                </Texte>
+              </View>
+            ) : null}
+            <Bouton
+              variante={lecture ? 'primaire' : 'secondaire'}
+              icone={lecture ? Pause : Volume2}
+              libelle={lecture ? 'Arrêter la lecture' : 'Écouter l’alerte'}
+              onPress={() => basculerLecture(a)}
+              petit
+              style={{ marginTop: espace.sm }}
+            />
+          </Carte>
+        );
+      })}
     </Ecran>
   );
 }
