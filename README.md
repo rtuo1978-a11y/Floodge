@@ -42,6 +42,7 @@ Ordre conseillé pour lancer tout le projet en local :
 
 ## Documentation
 
+- **[Fiche projet (Word)](docs/Fiche-projet-FlowManage.docx)**
 - **[Installer et lancer tout le projet en local](docs/installation-locale.md)**
 - [Logo et règles de placement](docs/marque/README.md)
 - [Architecture](docs/architecture.md)
