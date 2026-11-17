@@ -85,7 +85,8 @@ async function main() {
       source: 'démonstration',
       estDemo: true,
     };
-    await prisma.zoneRisque.upsert({ where: { code: z.code }, create: data, update: data });
+    // update vide : ne pas écraser les contours précis envoyés par le service cartographie
+    await prisma.zoneRisque.upsert({ where: { code: z.code }, create: data, update: {} });
   }
 
   if ((await prisma.conseil.count()) === 0) {
