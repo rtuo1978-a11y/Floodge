@@ -40,6 +40,7 @@ Ordre conseillé pour lancer tout le projet en local :
 
 ## Documentation
 
+- **[Installer et lancer tout le projet en local](docs/installation-locale.md)**
 - [Architecture](docs/architecture.md)
 - [Contrat d'API](docs/api.md) — la référence commune entre le mobile et le back-end
 - [Planning (10/11 → 15/12/2026)](docs/planning.md)
