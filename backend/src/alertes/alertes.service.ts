@@ -68,9 +68,10 @@ export class AlertesService {
     const alerte = await this.prisma.alerte.create({
       data: {
         titre: `Inondation probable${lieu}`,
+        // Texte destiné aux habitants une fois l'alerte publiée
         message:
           `${decision.nbSources} habitants signalent de l'eau dans un rayon de 500 m${lieu}. ` +
-          'Vérification nécessaire avant diffusion.',
+          'Évitez le secteur, ne traversez pas les rues inondées et restez en hauteur.',
         niveau: decision.niveau,
         type: 'INONDATION',
         statut: 'BROUILLON',
@@ -87,7 +88,7 @@ export class AlertesService {
       { role: { in: ['AUTORITE', 'ADMIN'] } },
       {
         titre: `À vérifier : ${alerte.titre}`,
-        corps: alerte.message,
+        corps: `${decision.nbSources} sources concordantes. Vérifiez la situation avant de publier l'alerte.`,
         donnees: { type: 'alerte_a_verifier', alerteId: alerte.id },
         urgent: decision.niveau === 'DANGER',
       },
