@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="fm-fond" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0284C7"/>
+      <stop offset="1" stop-color="#0C4A6E"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="url(#fm-fond)"/>
+  <path d="M32 7 C 24.5 17.5, 15 27, 15 38 a17 17 0 0 0 34 0 C 49 27, 39.5 17.5, 32 7 Z" fill="#FFFFFF"/>
+  <path d="M26.5 49.5 V 31.5" stroke="#0369A1" stroke-width="4.6" stroke-linecap="round"/>
+  <path d="M26.5 31.5 c3.2 -3.4 6.4 -3.4 9.6 0 s5.6 3.2 8 0.6" stroke="#0369A1" stroke-width="4.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M26.5 41 c2.8 -3 5.6 -3 8.4 0 s4 2.6 5.6 1.2" stroke="#0EA5E9" stroke-width="4.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
