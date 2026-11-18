@@ -9,6 +9,23 @@ FlowManage permet aux habitants de **signaler une inondation** (photo + position
 
 ---
 
+## Aperçu de l'application
+
+> Captures de l'aperçu web de l'application mobile (branche `frontend-mobile`, `npm run web`), avec des données de démonstration.
+
+<p align="center">
+  <img src="docs/captures/fm-carte.jpg" width="200" alt="Carte des zones à risque">
+  <img src="docs/captures/fm-alertes.jpg" width="200" alt="Alertes avec lecture vocale">
+  <img src="docs/captures/fm-sos.jpg" width="200" alt="Alerte secours SOS">
+</p>
+<p align="center">
+  <img src="docs/captures/fm-conseils.jpg" width="200" alt="Conseils et assistant IA">
+  <img src="docs/captures/fm-profil.jpg" width="200" alt="Profil, badges et classement">
+  <img src="docs/captures/fm-bienvenue.jpg" width="200" alt="Écran de bienvenue">
+</p>
+
+---
+
 ## Organisation du dépôt
 
 Le dépôt est un **monorepo** : chaque partie du projet a son dossier **et sa branche de travail**.
